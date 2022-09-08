@@ -16,7 +16,6 @@ use Parallel::ForkManager;
 
 # Variable Initialization
 my $dbdir;
-my $cosmicDB = "COSMIC_13122022.tsv";
 my $genesids = "custom";
 my $pathways = "pathway_desc.tsv";
 my $logfile = "";
@@ -70,7 +69,7 @@ sub create_dbs {
 #	Load files into variables
 #	print "\n\nLoading database files...\n\n";
 
-#    my @cosmic_files = glob("$dbdir/cosmic*.tsv");
+#    my @cosmic_files = "$dbdir/cosmic.tsv";
 
 #    foreach (@cosmic_files) {
 #        my $file = $_;
@@ -147,7 +146,7 @@ sub create_dbs {
 #Funciona
 
 #	my $uniprot_b = DBM::Deep->new("$dbdir/uniprot_b.db");
-#    my @uniprot_file = glob("$dbdir/Uniprot_*.tsv");
+#   my @uniprot_file = "$dbdir/Uniprot.tsv";
 #	open FILE, "<$uniprot_file[0]" or die "Couldn't open file: $!";
 #	while (<FILE>) {
 #		chomp ($_);
@@ -161,7 +160,7 @@ sub create_dbs {
 #Funciona
 
 #	my $interpro_a = DBM::Deep->new("$dbdir/interpro_a.db");
-#   my @interpro_file = glob("$dbdir/Interpro_*.tsv");
+#   my @interpro_file = "$dbdir/Interpro.tsv";
 #	my $last_domain = DBM::Deep->new("$dbdir/last_domain.db");
 #	open FILE, "<$interpro_file[0]" or die "Couldn't open file: $!";
 #	while (<FILE>) {
@@ -240,7 +239,7 @@ sub create_dbs {
 #Funciona
 
 #	my $clinvar = DBM::Deep->new("$dbdir/clinvar.db");
-#    my @clinvar_file = glob("$dbdir/Clinvar_*.tsv");
+#   my @clinvar_file = "$dbdir/Clinvar.tsv";
 #	open CLINVAR, "<$clinvar_file[0]" or die "Couldn't open file: $!";
 #	while (<CLINVAR>) {
 #		chomp $_;

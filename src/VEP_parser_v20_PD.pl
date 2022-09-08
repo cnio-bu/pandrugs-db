@@ -17,60 +17,41 @@ use List::MoreUtils qw(uniq);
 my $outdir = "./output/";
 my $dbdir;
 my $outpath = getcwd;
-my $local_conseq_db = "VEP_conseq.csv";
-my $cosmicDB = "cosmicDB.tsv";
-my $cosmicDB_WGS = "cosmicDB_WGS.tsv";
-my $genesids = "genes_ids_az.csv";
-my $pathways = "pathways";
-my $local_cosmic = "";
-my $local_cosmic_WGS = "";
 my (%cosmic_list1, %cosmic_list2, %cosmic_list3, %cosmic_list4, %cosmic_list5, %cosmic_list6, %cosmic_list7, %cosmic_list8, %cosmic_list9, %cosmic_list10, %cosmic_list11, %cosmic_list12, %cosmic_list13, %cosmic_list14, %cosmic_list15, %cosmic_list16, %cosmic_list17);
 my ($cosmic_list1, $cosmic_list2, $cosmic_list3, $cosmic_list4, $cosmic_list5, $cosmic_list6, $cosmic_list7, $cosmic_list8, $cosmic_list9, $cosmic_list10, $cosmic_list11, $cosmic_list12, $cosmic_list13, $cosmic_list14, $cosmic_list15, $cosmic_list16, $cosmic_list17);
 my $vep_results_file;
 my $logfile = "";
 my %pathw_desc;
 my $pathw_desc;
-my $sortt = "http://www.kryogenix.org/code/browser/sorttable/sorttable.js";
 my %genes_ids;
 my $genes_ids;
 my $root_name = "";
 my $jobid;
-my $lib = "./PCDA";
 my $genes_affected;
 
 my $conseq_file = 1;
-my $frq_filter = 0;
-my $fchain = 0;
 my $MAX_PROCESSES = 8;
-my ($tfile, $tumor, $panel, $sample);
 
 my %kegg_gene_pathway_DB;
 my $kegg_gene_pathway_DB;
 
 my ($start, $end, $time);
-my (%pfam_a, %uniprot_a, %uniprot_b, %interpro_a);
-my ($pfam_a, $uniprot_a, $uniprot_b, $interpro_a);
+my (%pfam_a, %uniprot_b, %interpro_a);
+my ($pfam_a, $uniprot_b, $interpro_a);
 
 my %zygosity;
-my %cgc;
-my %oncorole;
-my %driver;
 my %last_domain;
 my %essential;
 my %cancer_domain;
 my %clinvar;
 my %appris;
 
-my $tumorpor;
-my $cgc;
 my $generole;
-my $driver;
 my $last_domain;
 my $essential;
 my $cancer_domain;
 my $clinvar;
 my $appris;
-my $exome_coordinates;
 
 #Command line arguments handle
 if (!@ARGV || grep (/^((\-\-help)|(\-h))$/,@ARGV)) {
@@ -139,8 +120,6 @@ if (!$vep_results_file) {
 if (!$dbdir) {
 	die "\nPath to databases not indicated. Please, enter the databases path.\n\neg. -d=databases\n\n";
 }
-
-my $local_sortt = "$dbdir/sorttable.js";
 
 # Create folders
 mkpath($dbdir, 0);
@@ -439,7 +418,6 @@ sub VEP_Parser_Csv($$) {#Require a DB_conection and source data file
     					my $uniprot = "";
     					my $pfam = "";
     					my $interpro = "";
-    					my $role_driver = "";
 						my $var_type = "";
 	                    my $gnomAD = "";
 						my $gnomAD_NFE = "";
@@ -724,25 +702,6 @@ sub VEP_Parser_Csv($$) {#Require a DB_conection and source data file
 
 }
 
-sub query2AoA() {
-
-	# Require a DB connection and the dataset from the query
-	# e.g. query2AoA($sth)
-	my ($sth,$verbose) = @_;
-	my @AoA = ();
-	my $col_names = $sth->{NAME};
-
-	push @AoA, [@{$col_names}];
-
-	while (my $row = $sth->fetchrow_arrayref) {
-		push @AoA, [@{$row}];
-	}
-
-	if (!$verbose) {printl ("\n ### " . $sth->rows . " registro(s) ###\n")};
-	return @AoA;
-
-}
-
 sub chkmut_cosmic() {
 
 	my ($gene, $transcript, $HGVSc) = @_;
@@ -873,7 +832,6 @@ sub create_vscore() {
 	foreach my $i (0..$#vep_file) {
 
 		@linedata = @{$vep_file[$i]};
-		my $gene_freq_num = "";
 
 		if ($lastgene ne $linedata[$scored_columns{gene_hgnc}]) {
 

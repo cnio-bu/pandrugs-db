@@ -1,5 +1,4 @@
 #!/usr/bin/python
-#conda activate pandrugs2
 
 import os
 import re
@@ -10,28 +9,33 @@ import wget
 import pandas as pd
 import progressbar
 
-##Revisar ficheros y pathways
-
-#Directorio de descargas
+#Set to the desired download directory
 dwn_dir = '/home/epineiro/Analysis/PanDrugs/2.0/downloads/'
 
-#URLs ficheros a descargar
+#URLs for downloadable files
 gencode = 'ftp://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/latest_release/gencode.v39.annotation.gtf.gz'
 gdsc = 'ftp://ftp.sanger.ac.uk/pub/project/cancerrxgene/releases/current_release/ANOVA_results_GDSC2_20Feb20.xlsx'
 features = 'https://www.cancerrxgene.org/downloads/download/genetic_feature'
 kegg_ATC = 'https://www.genome.jp/kegg-bin/download_htext?htext=br08310&format=htext&filedir='
-cmap = 'https://clue.io/fe0e0966-247c-4ad2-8258-498cf48acad5'
+cmap = 'https://api.clue.io/api/rep_drug_moas/?filter[skip]=0&user_key=' #Access clue web and retrieve user key
 fda = 'https://www.fda.gov/media/89850/download'
 fda_label = ['https://download.open.fda.gov/drug/label/drug-label-0001-of-0011.json.zip', 'https://download.open.fda.gov/drug/label/drug-label-0002-of-0011.json.zip', 'https://download.open.fda.gov/drug/label/drug-label-0003-of-0011.json.zip', 'https://download.open.fda.gov/drug/label/drug-label-0004-of-0011.json.zip', 'https://download.open.fda.gov/drug/label/drug-label-0005-of-0011.json.zip', 'https://download.open.fda.gov/drug/label/drug-label-0006-of-0011.json.zip', 'https://download.open.fda.gov/drug/label/drug-label-0007-of-0011.json.zip', 'https://download.open.fda.gov/drug/label/drug-label-0008-of-0011.json.zip', 'https://download.open.fda.gov/drug/label/drug-label-0009-of-0011.json.zip', 'https://download.open.fda.gov/drug/label/drug-label-0010-of-0011.json.zip', 'https://download.open.fda.gov/drug/label/drug-label-0011-of-0011.json.zip']
 ema = 'https://www.ema.europa.eu/sites/default/files/Medicines_output_european_public_assessment_reports.xlsx'
 ct = 'https://clinicaltrials.gov/AllPublicXML.zip'
-kegg_ind = 'http://rest.kegg.jp/get/$path/kgml' # $path sera sustituido por los nombres de los pathways
+kegg_ind = 'http://rest.kegg.jp/get/$path/kgml' # $path will be substituted for pathway's codes
 cgc = 'https://cancer.sanger.ac.uk/cosmic/file_download/GRCh38/cosmic/v95/cancer_gene_census.csv'
-oncovar = 'https://oncovar.org/resource/download/All_genes_OncoVar_TCGA/TCGA.PanCancer.all.genes.OncoVar.tsv.gz'
+oncovar = 'https://oncovar.org/resource/download/All_genes_OncoVar_TCGA.tar.gz'
 therasabdab = 'http://opig.stats.ox.ac.uk/webapps/newsabdab/static/downloads/TheraSAbDab_SeqStruc_OnlineDownload.csv'
 intogen = 'https://www.intogen.org/download?file=IntOGen-Drivers-20200201.zip'
+depmap = 'https://ndownloader.figshare.com/files/34990036'
+genes_dwn = 'https://www.genenames.org/cgi-bin/download/custom?col=gd_app_sym&col=gd_pub_eg_id&status=Approved&hgnc_dbtag=on&order_by=gd_app_sym_sort&format=text&submit=submit'
+genepathway_dwn = 'http://rest.kegg.jp/link/pathway/hsa'
+pathwaydesc_dwn = 'http://rest.kegg.jp/list/pathway/hsa'
+sl = 'https://figshare.com/ndownloader/files/36451119?private_link=a035301c05daa2ce668e'
+cosmic_link = ''
+clinvar_dwn = 'https://ftp.ncbi.nlm.nih.gov/pub/clinvar/xml/ClinVarFullRelease_00-latest.xml.gz'
 
-#authentication string for COSMIC download: cambiar por el de una cuenta pandrugs
+#place authentication string for COSMIC download
 auth_str = ''
 
 def download_DGIdb():
@@ -66,13 +70,12 @@ def download_DGIdb():
     df = pd.DataFrame(genes)
     df.to_csv(dwn_dir+genes_file, index=False, sep='\t', header=False)
     print('Retrieving data from DGIdb...')
-    #Por cada gen del listado recupero las asociaciones de la base de datos de DGIdb
+    #For each gene in the list I retrieve the drug-gene associations in DGIdb
     dgidb_dwn = 'DGIdb_interactions_dwn.tsv'
     open(dwn_dir+dgidb_dwn, 'w').close()
     filei = pd.read_csv(dwn_dir+genes_file, sep='\t', low_memory=False, header=None)
     genes = filei.iloc[:, 0].tolist()
 
-#    import time
     import progressbar
 
     for i in progressbar.progressbar(range(len(genes))):
@@ -114,9 +117,31 @@ def download_cmap():
 
     print('Downloading CLUE Repurposing data...')
 
-    cmap_dwn = wget.download(cmap, out=dwn_dir)
-    print(cmap_dwn)
+    moa_file = 'cmap_moa.tsv'
 
+    stop = 0
+    skip = 0
+
+    append_file = open(dwn_dir+moa_file, 'w')
+    append_file.close()
+
+    while stop == 0:
+        
+        cmap_dwn = wget.download(cmap.replace('[skip]=0','[skip]='+str(skip)), out=dwn_dir)
+        print(cmap_dwn)
+
+        dwn_file = open(dwn_dir+'download.wget', 'r')
+        dwn_file_data = dwn_file.read()
+        if dwn_file_data.count('pert_iname') < 1000: stop = 1
+        dwn_file.close()
+
+        append_file = open(dwn_dir+moa_file, 'a')
+        append_file.write(dwn_file_data+'\n')
+        append_file.close()
+
+        os.remove(dwn_dir+'download.wget')
+        skip = skip+1000	
+        
 def download_FDA():
 
     print('Downloading FDA data ...')
@@ -175,7 +200,7 @@ def download_CGC():
 
 def download_oncovar():
 
-    print('Downloading oncovar file...')
+    print('Downloading oncovar files...')
 
     oncovar_dwn = wget.download(oncovar, out=dwn_dir)
     print(oncovar_dwn)
@@ -284,9 +309,52 @@ def download_intogen():
 
     print('Downloading IntOGen data...')
 
-    print(intogen)
     intogen_dwn = wget.download(intogen, out=dwn_dir)
     print(intogen_dwn)
+
+def download_depmap():
+
+    print('Downloading DepMap public score + Chronos...')
+
+    depmap_dwn = wget.download(depmap, out=dwn_dir)
+    print(depmap_dwn)
+
+def download_gene_ids():
+
+    print('Downloading GeneIds...')
+    genes = wget.download(genes_dwn, out=dwn_dir)
+    print(genes)
+
+def download_KEGG_pathways():
+
+    genepathway_file = 'gene_pathway.tsv'
+    pathwaydesc_file = 'pathway_desc.tsv'
+
+    print('Downloading GenePathways...')
+    gene_pathway = wget.download(genepathway_dwn, out=dwn_dir)
+    print(gene_pathway)
+    os.rename(dwn_dir+'hsa', dwn_dir+genepathway_file)
+
+    print('Downloading Pathways descriptions...')
+    pathway_desc = wget.download(pathwaydesc_dwn, out=dwn_dir)
+    print(pathway_desc)
+    os.rename(dwn_dir+'hsa',dwn_dir+pathwaydesc_file)
+
+def download_SL():
+
+    print('Downloading SL interactions...')
+    sl_dwn = wget.download(sl, out=dwn_dir)
+    print(sl_dwn)
+
+def download_cosmic():
+    print('Dowloading CosmicMutantExport...')
+    cosmic = wget.download(cosmic_link, out=dwn_dir)
+    print(cosmic)
+
+def download_clinvar():
+    print('Dowloading ClinVar...')
+    clinvar = wget.download(clinvar_dwn, out=dwn_dir)
+    print(clinvar)
 
 #download_DGIdb()
 #download_therasabdab()
@@ -303,4 +371,12 @@ def download_intogen():
 #download_oncovar()
 #download_CIViC_evidence()
 #download_oncoKB_evidence()
-download_intogen()
+#download_intogen()
+#download_depmap()
+#download_gene_ids()
+#download_KEGG_pathways()
+#download_SL()
+
+#exclusive for genomic annotation
+#download_cosmic()
+#download_clinvar()

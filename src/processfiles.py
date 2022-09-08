@@ -1,42 +1,39 @@
 #!/usr/bin/python
-#conda activate pandrugs2
 
 import os
 import re
 import subprocess
 import pdb
-#import numpy as np
 import xml.etree.ElementTree as ET
 import gzip
 import wget
 import pandas as pd
 import itertools
-#from datetime import datetime
-#import multiprocessing
-#from multiprocessing import Pool
 import zipfile
 from io import StringIO
 import progressbar
 import json
+import tarfile
+import scipy
+from scipy import stats
+import multiprocessing
+from tqdm import tqdm
+import numpy as np
 
-##Revisar ficheros y pathways
-#Directorio de descargas
+#Set to the established download directory
 dwn_dir = '/home/epineiro/Analysis/PanDrugs/2.0/downloads/'
 
-#Directorio con ficheros procesados
+#Set to the desired processed files directory
 pro_dir = '/home/epineiro/Analysis/PanDrugs/2.0/processed/'
-
-#Ficheros procesados
-dgidb = 'DGIdb_interactions.tsv'
-sabdab_file = 'sabdab.tsv'
-moalmanac_file = 'moalmanac.tsv'
-GDSC = 'GDSC.tsv'
 
 def process_DGIdb():
 
     print('Formating DGIdb file...')
-    #Limpio el fichero de salida de lineas que se refieren a mathces no encontrados y lineas de cabecera que se introducen en cada acceso
+
+    dgidb = 'DGIdb_interactions.tsv'
     dgidb_dwn = 'DGIdb_interactions_dwn.tsv'
+
+    #Clean in the output file those lines that are matches not found and header lines introduced in each access
     outputh = open (pro_dir+dgidb, 'w')
     inputh = open (dwn_dir+dgidb_dwn, 'r')
     outputh.write('\t'.join(['gene_name','drug_name','interaction_type','source','gene_categories'])+'\n')
@@ -51,11 +48,14 @@ def process_DGIdb():
 
 def process_sabdab():
 
+    print('Formating SAbDab file...')
+
+    sabdab_file = 'sabdab.tsv'
+    sabdab_dwn = 'TheraSAbDab_SeqStruc_OnlineDownload.csv'
+
     sabdab_targets = {'Anthrax Protective Antigen': '', 'APP Abeta 1-40/42;TFRC': 'APP;TFRC', 'AR-C124910XX': '', 'CALCA&CALCB': 'CALCA;CALCB', 'Canine NGFB': '', 'CD41_CD61': 'CD41;CD61', 'CEACAM5&CD3E;CD3E': 'CEACAM5;CD3E', 'Dabigatran': '', 'DNA/H1 Complex': '', 'ERBB2 (Domain II);ERBB2 (Domain IV)': 'ERBB2', 'FN extra domain B': 'FN1', 'FZD Family': 'FZD1;FZD2;FZD3;FZD4;FZD5;FZD6;FZD7;FZD8;FZD9;FZD10', 'Ganglioside GD2': 'B4GALNT1', 'Heat Shock Protein 90 Homolog': 'HSP90', 'HHV gB AD-1': '', 'HIV-1 gp120': '', 'HIV-1 gp120 CD4bs': '', 'HIV-1 gp120 V3': '', 'Idiotope of anti-NeuGc-ganliosides': '', 'IGF1&IGF2': 'IGF1;IGF2', 'IL31 (Canine)': '', 'IL31 (Feline)': '', 'Influenza A HA': '', 'Influenza A HA2': '', 'Influenza B Virus': '', 'ITGA2B_ITGB3': 'ITGA2B;ITGB3', 'ITGA4_ITGB7': 'ITGA4;ITGB7', 'ITGA4_ITGB7&ITGAE_ITGB7': 'ITGA4;ITGAE;ITGB7', 'ITGAV_ITGB3': 'ITGAV;ITGB3', 'MRSV envelope protein': '', 'NGFB (Canine)': '', 'Non-Binding': '', 'NOTCH2&3': 'NOTCH2;NOTCH3', 'PcrV type III secretion system': '', 'PcrV type III secretion system;Polysaccharide synthesis locus (Pseudomonas)': '', 'PDCD1 (Canine)': '', 'Phosphatidylserine': 'PTDSS1', 'pro-GDF-8': 'MSTN', 'Rabies Virus Spike Glycoprotein G': '', 'Rabies Virus Strain ERA GP Ectodomain Epitope G-II': '', 'Rabies Virus Strain ERA GP Ectodomain Epitope G-III': '', 'Rabies Virus Surface Glycoprotein 4 (gp4) Epitope 1': '', 'RhD': 'RHD', 'RSV gpF': '', 'RSV gpF;RSV gpF': '', 'RV Antigenic Site III': '', 'SARS-CoV-2 Spike': '', 'SARS-CoV-2 Spike RBD': '', 'Serotype IATS O11': '', 'Shiga Toxin Type 1': '', 'Shiga Toxin Type 2': '', 'SIRPα': 'SIRPA', 'TGFB1 (Canine)': '', 'Toxin A': '', 'VP2 (Canine)': '', 'Zaire Ebolavirus GP': '', 'Zaire Ebolavirus GP1': '', 'α4β7': 'ITGB7', 'RSV': '', 'SpA': ''}
 
-    print('Update SAbDab file...')
-
-    sabdab = pd.read_csv(dwn_dir+'TheraSAbDab_SeqStruc_OnlineDownload.csv', low_memory=False)
+    sabdab = pd.read_csv(dwn_dir+sabdab_dwn, low_memory=False)
     sabdab.fillna('', inplace=True)
 
     for index, row in sabdab.iterrows():
@@ -68,14 +68,18 @@ def process_sabdab():
 
 def process_moalmanac():
 
+    print('Formating MOAlmanac file...')
+
+    moalmanac_file = 'moalmanac.tsv'
+    moalmanac_dwn = 'moalmanac_dwn.tsv'
+
     def process_alterations(selection):
         alterations = []
         for ele in list(set(selection['feature_type'].tolist())):
             alterations.append(ele+' ('+','.join(list(set(selection[selection['feature_type'] == ele]['protein_change'].dropna().tolist())))+')')
         return(';'.join(alterations))
 
-    print('Formating moalmanac file...')
-    inputf = pd.read_csv(dwn_dir+'moalmanac_dwn.tsv', sep ='\t', header=None, low_memory=False)
+    inputf = pd.read_csv(dwn_dir+moalmanac_dwn, sep ='\t', header=None, low_memory=False)
     inputf.columns = ['assertion_id', 'feature_type', 'gene', 'gene1', 'gene2', 'drug', 'resistance', 'sensitivity', 'therapy_type', 'protein_change', 'predictive_implication', 'validated']
     inputf = inputf[inputf['validated'] == True]
     inputf = inputf[((inputf['drug'].str.contains('\+') == False) & (inputf['predictive_implication'].isin(['FDA-Approved', 'Guideline', 'Clinical trial', 'Clinical evidence']))) | ((inputf['drug'].str.contains('\+')) & (inputf['predictive_implication'].isin(['FDA-Approved', 'Guideline'])))]
@@ -124,8 +128,18 @@ def process_GDSC():
 
     print('Formating GDSC...')
 
-    filei = open(dwn_dir+'GDSC_features.csv','r')
-    fileo = open(pro_dir+'GDSC_features.tsv','w')
+    GDSC = 'GDSC.tsv'
+    GDSC_dwn = 'GDSC_features.csv'
+    GDSC_tsv = 'GDSC_features.tsv'
+
+    #Obtain the name of the ANOVA downloaded file from GDSC
+    ANOVA_dwn = ''
+    listdir = os.listdir(dwn_dir)
+    for efile in listdir:
+        if re.search('^ANOVA', efile) != None: ANOVA_dwn = efile
+
+    filei = open(dwn_dir+GDSC_dwn,'r')
+    fileo = open(pro_dir+GDSC_tsv,'w')
 
     for line in filei:
         line = line.strip('\n')
@@ -158,7 +172,6 @@ def process_GDSC():
                 #Correction of NKX2.1 value
                 if row['feature_name'] == "gain.cnaPANCAN393..FOXA1.NKX2.1.PSMA6.":
                     field_a[field_a.index('1')-1:field_a.index('1')+1] = ['-'.join(field_a[field_a.index('1')-1:field_a.index('1')+1])]
-                    pdb.set_trace()
                 return ','.join(field_a[3:len(field_a)-1])
 
         elif re.search('loss.|gain.',row['feature_name']) != None and re.search('\.\.',row['feature_name']) == None:
@@ -173,12 +186,6 @@ def process_GDSC():
         elif re.search('_mut',row['feature_name']) != None: return 'mutation'
 
     gfeatures = pd.read_csv(pro_dir+'GDSC_features.tsv', sep='\t', header = 0, dtype={'cell_line_name': str, 'cosmic_sample_id': int, 'gdsc_desc1': str, 'gdsc_desc2': str, 'tcga_desc': str, 'genetic_feature': str, 'is_mutated': int, 'recurrent_gain_loss': str, 'genes_in_segment': str})
-
-    #Obtain the name of the ANOVA downloaded file from GDSC
-    ANOVA_dwn = ''
-    listdir = os.listdir(dwn_dir)
-    for efile in listdir:
-        if re.search('^ANOVA', efile) != None: ANOVA_dwn = efile
 
     filei = pd.read_excel(dwn_dir+ANOVA_dwn, sheet_name = 'PANCANCER_ANOVA', header = 0, dtype={'drug_name': str, 'drug_id': int, 'target': str, 'target_pathway': str, 'feature_name': str, 'n_feature_pos': int, 'n_feature_neg': int, 'ic50_effect_size': float, 'log_ic50_mean_pos': float, 'log_ic50_mean_neg': float, 'log_max_conc_tested': float, 'feature_ic50_t_pval': float, 'feature_delta_mean_ic50': float, 'feature_pos_ic50_var': float, 'feature_neg_ic50_var': float, 'feature_pval': float, 'tissue_pval': float, 'msi_pval': float, 'fdr': float, 'tissue_type': str, 'dataset_version': float})
 
@@ -197,8 +204,13 @@ def process_KEGG_ATC():
 
     print('Formating KEGG ATC...')
 
-    filei = open(dwn_dir+'br08310.keg', 'r')
-    fileo = open(pro_dir+'TargetBasedClassificationKEGG_formated.tsv', 'w')
+    KEGG_ATC = 'TargetBasedClassificationKEGG_formated.tsv'
+    KEGG_ATC_dwn = 'br08310.keg'
+
+    filei = open(dwn_dir+KEGG_ATC_dwn, 'r')
+    fileo = open(pro_dir+KEGG_ATC, 'w')
+
+    fileo.write('\t'.join(['drug', 'familiy1', 'family2', 'family3'])+'\n')
 
     elementA = ''
     elementB = ''
@@ -217,7 +229,6 @@ def process_KEGG_ATC():
             if name_s == None:
                 pattern = re.compile('^[ABCDEF] *D[\d]{5} +(.+?)$')
                 name_s = pattern.search(line_a[0])
-            if name_s == None: pdb.set_trace()
             name = name_s.group(1)
             tipo = ''
             if len(line_a) > 1:
@@ -231,6 +242,7 @@ def process_KEGG_ATC():
             if line_a[0][0] == 'C': elementB_w = ''
             if line_a[0][0] == 'D': elementC_w = ''
             if line_a[0][0] == 'E': elementD_w = ''
+
 
             fileo.write('\t'.join([name,elementA_w,elementB_w,elementC_w,elementD_w])+'\n')
         else:
@@ -273,10 +285,27 @@ def process_KEGG_ATC():
     filei.close()
     fileo.close()
 
+def process_cmap():
+
+    print('Formating CMAP MOA...')
+
+    CMAP_MOA = 'cmap_moa.tsv'
+
+    fileo = open(pro_dir+CMAP_MOA ,'w')
+    fileo.write('\t'.join(['drug', 'moa'])+'\n')
+
+    with open(dwn_dir+CMAP_MOA) as f:
+        for line in f:
+            data = json.loads(line)
+            for e in data:
+                fileo.write('\t'.join([e['pert_iname'], e['name']])+'\n')
+    fileo.close()
+
 def process_FDA():
 
     print('Formating FDA file...')
 
+    fda_status_file = 'fda_status.tsv'
     #Obtain the name of the FDA zip downloaded
     fda_dwn = ''
     listdir = os.listdir(dwn_dir)
@@ -302,9 +331,7 @@ def process_FDA():
                     data = pd.read_csv(f, sep ='\t', header=0, low_memory=False)
                     df_dict['markstatlook'] = data
 
-    #create the file
-    fda_status_file = 'fda_status.tsv'
-
+    #create the output file
     fda_drug_list = {}
     for index, row in df_dict['products'].iterrows():
         compound = row['ActiveIngredient'].split('; ')
@@ -332,7 +359,9 @@ def process_FDA_label():
 
     print('Formating FDA label file...')
 
-    fileo = open(pro_dir+'fda_labels.tsv','w')
+    FDA_label = 'fda_labels.tsv'
+
+    fileo = open(pro_dir+FDA_label,'w')
     fileo.write("\t".join(['indication', 'ApplNo'])+'\n')
 
     #Obtain the name of the FDA zip downloaded
@@ -357,20 +386,23 @@ def process_EMA():
 
     print('Formating EMA file...')
 
-    filei = pd.read_excel (dwn_dir+'Medicines_output_european_public_assessment_reports.xlsx')
+    ema_file = 'ema_status.tsv'
+    EMA_dwn = 'Medicines_output_european_public_assessment_reports.xlsx'
+
+    filei = pd.read_excel (dwn_dir+EMA_dwn)
     filei.columns = filei.loc[filei.iloc[:,0] == 'Category'].values.tolist()[0]
     selection = filei.loc[filei['Category'] == 'Human'][['Medicine name', 'Therapeutic area', 'International non-proprietary name (INN) / common name', 'Active substance', 'Authorisation status', 'Condition / indication']]
 
-    ema_file = 'ema_status.tsv'
     selection.to_csv(pro_dir+ema_file, index=False, sep='\t')
 
 def process_ct():
 
     print('Formating Clinical Trial file...')
 
+    ct = 'clinicaltrials.tsv'
     ct_dwn = 'AllPublicXML.zip'
 
-    fileo = open(pro_dir+'clinicaltrials.tsv','w')
+    fileo = open(pro_dir+ct,'w')
     fileo.write("\t".join(['condition', 'title', 'status', 'drug'])+'\n')
 
     with zipfile.ZipFile(dwn_dir+ct_dwn) as z:
@@ -390,18 +422,44 @@ def process_ct():
                             for elem in tree.iterfind('intervention/intervention_name'):
                                 drug = elem.text
 
-                    fileo.write('\t'.join([condition,title,status,drug])+'\n')
+                    if drug != '': fileo.write('\t'.join([condition,title,status,drug])+'\n')
 
     fileo.close()
 
 def process_cgc_oncovar():
 
+    print('Creating file oncovar scores...')
+
+    oncovar_file = 'oncovar_scores.tsv'
+    oncovar_dwn = 'TCGA.PanCancer.all.genes.OncoVar.tsv.gz'
+
+    oncovar_tumor_dir = 'All_genes_OncoVar_TCGA.tar.gz'
+    oncovar = ''
+
+    tar = tarfile.open(name=dwn_dir+oncovar_tumor_dir)
+
+    output = open(pro_dir+oncovar_file, 'w')
+    output.write('\t'.join(['gene', 'cancer_type', 'P_value', 'FDR', 'OncoVar_Score', 'Consensus_Score', 'Driver_Level'])+'\n')
+
+    for member in tar.getnames():
+        if re.search('.gz$', member):
+            f=tar.extractfile(member)
+            data = pd.read_csv(f, compression='gzip', sep='\t', low_memory=False, header=0, encoding = 'ISO-8859-1')
+            for index, row in data.iterrows():
+                if row['Cancer'] == 'PanCancer':
+                    cancer = row['Cancer']
+                else:
+                    cancer = row['Cancer'].split('[')[1]
+                    cancer = cancer.replace(']', '')
+                output.write('\t'.join([row['Gene_symbol'], cancer, str(row['P_value']), str(row['FDR']), str(row['OncoVar_Score']), str(row['Consensus_Score']), str(row['Driver Level'])])+'\n')
+            if re.search(oncovar_dwn, member):
+                oncovar = data
+
     print('Creating file with ONC and TSG classification...')
 
     cgc_file = 'cancer_gene_census.csv'
-    oncovar_file = 'TCGA.PanCancer.all.genes.OncoVar.tsv.gz'
     cgc = pd.read_csv(dwn_dir+cgc_file, low_memory=False, header=0, encoding = 'ISO-8859-1')
-    oncovar = pd.read_csv(dwn_dir+oncovar_file, compression='gzip', sep='\t', low_memory=False, header=0, encoding = 'ISO-8859-1')
+    cgc = cgc.fillna('')
 
     fileo = open(pro_dir+'generole.tsv','w')
     fileo.write("\t".join(['gene', 'CGC', 'OncoKB', '2020Rule', 'CTAT', 'Oncogene', 'TSgene']) + '\n')
@@ -438,6 +496,21 @@ def process_cgc_oncovar():
 
     fileo.close()
 
+    print('Creating file with CGC info for scores...')
+
+    cgc = 'cgc_scores.tsv'
+
+    fileo = open(pro_dir+cgc,'w')
+    fileo.write("\t".join(['gene', 'cancer_type_source', 'Tier']) + '\n')
+
+    for index, row in cgc.iterrows():
+        tumors = row['Tumour Types(Somatic)'].split(', ')+row['Tumour Types(Germline)'].split(', ')
+        tumors = [x for x in tumors if x != '']
+        for t in list(set(tumors)):
+            fileo.write("\t".join([row['Gene Symbol'], t, str(row['Tier'])]) + '\n')
+
+    fileo.close()
+
 def process_KEGG_ind():
 
     print('Creating pathway member information...')
@@ -468,7 +541,7 @@ def process_KEGG_ind():
             import sys
             from Bio import Entrez
 
-            Entrez.email = "epineiro@cnio.es"
+            Entrez.email = "" #place email
 
             request = Entrez.epost("gene", id=gene)
 
@@ -521,7 +594,7 @@ def process_KEGG_ind():
                 entry2 = [relation.attrib['entry2']]
                 TYPE = relation.attrib['type']
 
-                #si el ID correponde a un grupo la relacion se repite para cada componente y el nombre sera el combinado
+                #if ID belongs to a group the relationship is repited for each component and the name will be the combined one
                 if entry1[0] in group.keys():
                     entry1 = group[entry1[0]]
 
@@ -638,7 +711,7 @@ def process_KEGG_ind():
                     if len(associations) > 0: #valid: association is in relations file
                         if len(set(associations) & set(['indirect effect'])) == 0: #valid: asociation is not indirect
                             if str(dictionary.loc[dictionary['node'] == pair[0]]['symbol'].tolist()[0]) != 'nan' and str(dictionary.loc[dictionary['node'] == pair[1]]['symbol'].tolist()[0]) != 'nan': #valid: node has gene symbol attached
-                                #actualizar nodo origen
+                                #update source node
                                 genes = []
                                 for gene in dictionary.loc[dictionary['node'] == pair[0]]['symbol'].tolist()[0].split(':'):
                                     #decide the role of the gene
@@ -652,7 +725,7 @@ def process_KEGG_ind():
                                     if len(path_it) == 0: path_it = [gene_names]
                                     else: path_it[-1] = gene_names
 
-                                    #informar nodo destino
+                                    #report destination node
                                     genes = []
                                     for gene in dictionary.loc[dictionary['node'] == pair[1]]['symbol'].tolist()[0].split(':'):
                                        genes.append(gene)
@@ -725,10 +798,11 @@ def process_gene_names():
 
     print('Creating file with checked gene symbols...')
 
+    genes_chk = 'genes_checked.tsv'
+
     genes = []
 
     files = [dgidb, sabdab_file, moalmanac_file, GDSC]
-#    files = [sabdab_file,GDSC]
 
     for f in files:
         inputf=open(pro_dir+f,'r')
@@ -741,7 +815,7 @@ def process_gene_names():
             else: genes.append(line_a[gene_index])
         inputf.close()
 
-    outputf = open(pro_dir+'genes_checked.tsv', 'w')
+    outputf = open(pro_dir+genes_chk, 'w')
     outputf.write('\t'.join(['gene_name', 'checked_gene_symbol'])+'\n')
 
     import httplib2 as http
@@ -821,9 +895,12 @@ def process_civic():
 
     print('Processing civic file...')
 
-    output = open(pro_dir+'civic.tsv', 'w')
+    civic_file = 'civic.tsv'
+    civic_dwn = 'civic_evidence.tsv'
+
+    output = open(pro_dir+civic_file, 'w')
     output.write('\t'.join(['drug_name', 'gene_name', 'variation', 'response', 'source'])+'\n')
-    civic = pd.read_csv(dwn_dir+'civic_evidence.tsv', sep ='\t', low_memory=False)
+    civic = pd.read_csv(dwn_dir+civic_dwn, sep ='\t', low_memory=False)
 
     civic_select = civic.loc[(civic['status'] == 'ACCEPTED') & (civic['evidence_direction'] == 'SUPPORTS') & (civic['clinical_significance'].isin(['RESISTANCE', 'SENSITIVITYRESPONSE'])) & (civic['evidenceLevel'].isin(['A']))] # A: Validated association
 
@@ -858,9 +935,12 @@ def process_oncoKB():
 
     print('Processing oncoKB file...')
 
-    output = open(pro_dir+'oncokb.tsv', 'w')
+    oncokb_file = 'oncokb.tsv'
+    oncokb_dwn = 'oncokb_biomarker_drug_associations.tsv'
+
+    output = open(pro_dir+oncokb_file, 'w')
     output.write('\t'.join(['drug_name', 'gene_name', 'variation', 'response', 'source'])+'\n')
-    oncokb = pd.read_csv(dwn_dir+'oncokb_biomarker_drug_associations.tsv', sep ='\t', low_memory=False)
+    oncokb = pd.read_csv(dwn_dir+oncokb_dwn, sep ='\t', low_memory=False)
 
     oncokb_select = oncokb.loc[(oncokb['Level'].isin(['1', '2', 'R1'])) & (oncokb['Gene'] != 'Other Biomarkers')] # 1, 2 and R1 (top evidence)
     drug_gene = oncokb_select.drop_duplicates(subset=['Drugs (for therapeutic implications only)', 'Gene'])
@@ -892,11 +972,320 @@ def process_oncoKB():
             output.write('\t'.join([d, row['Gene'], variation, response, 'OncoKB'])+'\n')
     output.close()
 
+def process_intogen():
+
+    print('Processing intogen file...')
+
+    intogen = 'intogen.tsv'
+    intogen_dwn = 'download'
+
+    output = open(pro_dir+intogen, 'w')
+    output.write('\t'.join(['gene_name', 'cohort', 'cancer_type', 'qvalue_combination'])+'\n')
+
+    with zipfile.ZipFile(dwn_dir+intogen_dwn) as z:
+        for i in z.infolist():
+            if re.search('Compendium_Cancer_Genes.tsv', i.filename):
+                with z.open(i.filename) as f:
+                    data = pd.read_csv(f, sep ='\t', header=0, low_memory=False)
+                    for index, row in data.iterrows():
+                        output.write('\t'.join([row['SYMBOL'], row['COHORT'], row['CANCER_TYPE'], str(row['QVALUE_COMBINATION'])])+'\n')
+
+    output.close()
+
+def process_depmap():
+
+    print('Processing DepMap public score + Chronos...')
+
+    depmap_dwn = 'CRISPR_gene_effect.csv'
+    depmap_pro = 'chronos_skew.tsv'
+
+    matrix = pd.read_csv(dwn_dir+depmap_dwn, low_memory=False)
+    matrix = matrix.set_index('DepMap_ID')
+    matrix.columns = [x.split(' ')[0] for x in matrix.columns.tolist()]
+    skewness = matrix.apply(lambda x : scipy.stats.skew(x, nan_policy='omit'))
+
+    skewness.to_csv(pro_dir+depmap_pro, index=True, sep='\t', header=False)
+
+def process_KEGG_pathways():
+
+    print('Processing KEGG gene pathway file...')
+
+    genepathway_file = 'gene_pathway.tsv'
+
+    inputf = pd.read_csv(dwn_dir+genepathway_file, sep ="\t", header=None, low_memory=False)
+
+    inputf.columns =['KEGG Gene ID', 'KEGG Pathway ID']
+    inputf['KEGG Gene ID'] = inputf['KEGG Gene ID'].str.replace('hsa:','')
+    inputf['KEGG Pathway ID'] = inputf['KEGG Pathway ID'].str.replace('path:','')
+
+    array_agg = lambda x: '|'.join(x.astype(str))
+    inputf = inputf.groupby('KEGG Gene ID').agg({'KEGG Pathway ID': array_agg})
+
+    inputf.to_csv(pro_dir+genepathway_file, sep = "\t")
+
+    print('Processing KEGG pathway descriptions file...')
+
+    pathwaydesc_file = 'pathway_desc.tsv'
+
+    inputf = pd.read_csv(dwn_dir+pathwaydesc_file, sep ="\t", header=None, low_memory=False)
+
+    inputf.columns =['KEGG Pathway ID', 'KEGG Pathway desc']
+    inputf['KEGG Pathway ID'] = inputf['KEGG Pathway ID'].str.replace('path:','')
+    inputf['KEGG Pathway desc'] = inputf['KEGG Pathway desc'].str.replace(' \- Homo sapiens \(human\)','')
+
+    inputf.to_csv(pro_dir+pathwaydesc_file, sep = "\t", index=False)
+
+def process_SL():
+
+    print('Processing SL dependencies file...')
+
+    sl_file = 'all_genetic_dependencies.tsv'
+
+    inputf = pd.read_csv(dwn_dir+sl_file, sep ="\t", low_memory=False)
+    outputf = open(pro_dir+'genetic_dependencies.tsv','w')
+    outputf.write('\t'.join(['gene','genetic_dependency'])+'\n')
+
+    sel = inputf.loc[inputf['padj'] < 0.05].groupby("dependency")
+
+    for dependency, frame in sel:
+        dep_genes = []
+        for index, row in sel.get_group(dependency).iterrows():
+            dep_genes.append(row['gene']+'('+row['alteration']+')')
+        outputf.write('\t'.join([dependency,'|'.join(dep_genes)])+'\n')
+
+    outputf.close()
+
+def create_cosmic_temp_files(idx):
+    output_file = pro_dir+'temp/'+'COSMIC_'+str(idx)+'.tsv'
+    select_column = ['Gene name', 'ID_sample', 'GENOMIC_MUTATION_ID', 'GRCh', 'Mutation genome position', 'FATHMM prediction', 'Mutation somatic status', 'HGVSC']
+    outputf = open(output_file,'w')
+    outputf.write('\t'.join(select_column)+'\n')
+    outputf.close()
+
+    cleaned_genes_group = [x for x in genes_group[idx] if str(x) != 'None']
+    gene_list = ['^'+x+'_' for x in cleaned_genes_group]
+
+    command = 'zcat '+pro_dir+outputn+' | egrep \''+'|'.join(gene_list)+'\' >> '+ output_file
+    subprocess.call(command,shell=True)
+
+def process_file(filename):
+    print(filename)
+    cosmic = {}
+    gene_freq = {}
+    mut_freq = {}
+
+    inputf = pd.read_csv(pro_dir+'temp/'+filename, sep ="\t", header=0, low_memory=False)
+
+    if not inputf.empty:
+        inputf[['Gene name']] = inputf['Gene name'].str.split('_',expand=True)[[0]]
+        inputf[['HGVSC_Transcript','HGVSC']] = inputf['HGVSC'].str.split(':',expand=True)
+        inputf[['HGVSC_Transcript']] = inputf['HGVSC_Transcript'].str.split('.',expand=True)[[0]]
+        outputf = open(pro_dir+'temp/'+filename.replace('.tsv', '_prc.tsv'), 'w')
+
+        gene_list = inputf['Gene name'].unique().tolist()
+        for gene in gene_list:
+            samples_gene = len(inputf.loc[inputf['Gene name'] == gene]['ID_sample'].unique().tolist())
+            mut_list = inputf.loc[inputf['Gene name'] == gene]['GENOMIC_MUTATION_ID'].unique().tolist()
+            for mut in mut_list:
+                samples_mut = len(inputf.loc[inputf['GENOMIC_MUTATION_ID'] == mut]['ID_sample'].unique().tolist())
+                transcript_list = inputf.loc[(inputf['Gene name'] == gene) & (inputf['GENOMIC_MUTATION_ID'] == mut)]['HGVSC_Transcript'].unique().tolist()
+                for trans in transcript_list:
+                    FATHMM = ['' if x is np.nan else x for x in inputf.loc[(inputf['Gene name'] == gene) & (inputf['GENOMIC_MUTATION_ID'] == mut) & (inputf['HGVSC_Transcript'] == trans)]['FATHMM prediction'].tolist()][0]
+                    HGVSc = inputf.loc[(inputf['Gene name'] == gene) & (inputf['GENOMIC_MUTATION_ID'] == mut) & (inputf['HGVSC_Transcript'] == trans)]['HGVSC'].tolist()[0]
+
+                    outputf.write('\t'.join([':'.join([gene, trans, HGVSc]), mut, FATHMM, str(samples_gene), str(samples_mut), str(total_cosmic_rec)])+'\n')
+        outputf.close()
+
+def create_cosmic_temp_files(idx):
+    outputn = cosmic_file.replace('.tsv.gz','.tsv.filtered.gz')
+    output_file = pro_dir+'temp/'+'COSMIC_'+str(idx)+'.tsv'
+    select_column = ['Gene name', 'ID_sample', 'GENOMIC_MUTATION_ID', 'GRCh', 'Mutation genome position', 'FATHMM prediction', 'Mutation somatic status', 'HGVSC']
+    outputf = open(output_file,'w')
+    outputf.write('\t'.join(select_column)+'\n')
+    outputf.close()
+
+    cleaned_genes_group = [x for x in genes_group[idx] if str(x) != 'None']
+    gene_list = ['^'+x+'_' for x in cleaned_genes_group]
+
+    command = 'zcat '+pro_dir+outputn+' | egrep \''+'|'.join(gene_list)+'\' >> '+ output_file
+    subprocess.call(command,shell=True)
+
+def process_cosmic():
+
+    global cosmic_file
+    cosmic_file = 'CosmicMutantExport.tsv.gz'
+
+    print('Processing COSMIC data...')
+
+    outputc = open(pro_dir+'COSMIC.tsv','a')
+    outputc.write('\t'.join(['Cosmic_key', 'cosmic_id', 'FATHMM', 'Gene_freq', 'Mut_freq', 'Total'])+'\n')
+
+#    print('-->Filtering COSMIC...')
+#    #filtering columns
+#    inputf = gzip.open(dwn_dir+cosmic_file,'r')
+#    first_line = inputf.readline().rstrip().decode().split('\t')
+    global outputn
+    outputn = cosmic_file.replace('.tsv.gz','.tsv.filtered.gz')
+#    select_column = ['Gene name', 'ID_sample', 'GENOMIC_MUTATION_ID', 'GRCh', 'Mutation genome position', 'FATHMM prediction', 'Mutation somatic status', 'HGVSC']
+#    inputf.close()
+
+#    #filtering records
+#    idx = [first_line.index(i) for i in select_column]
+#    cols = [str(i + 1) for i in idx]
+#     #algunos registros tienen el identificador vacio y no tienen por hgvsc (no los cuento)
+#    command = 'zcat '+dwn_dir+cosmic_file+' | cut -f '+','.join(cols)+' | awk -F"\t" \'($3 != "" && $4 == "38") || $1 == "Gene name" {print}\' | gzip > '+pro_dir+outputn
+#    subprocess.call(command,shell=True)
+
+    #obtaining list of genes
+    gfile = pro_dir+'gene_list.txt'
+    command = 'zcat '+pro_dir+outputn+' | cut -f 1 | cut -d\'_\' -f 1 | grep -v Gene | sort | uniq > '+gfile
+    subprocess.call(command,shell=True)
+
+    print('-->Creating COSMIC file...')
+    genes_file = pd.read_csv(gfile, sep ="\t", header=None, low_memory=False)
+    gene_list = genes_file[0].tolist()
+
+    def grouper(n, iterable, fillvalue=None):
+        import itertools
+        args = [iter(iterable)] * n
+        return itertools.zip_longest(*args, fillvalue=fillvalue)
+
+    global genes_group
+    genes_group = list(grouper(10, gene_list))
+
+#    os.mkdir(pro_dir+'temp/')
+#    a_pool = multiprocessing.Pool(processes=9)
+
+#    result_list_tqdm = []
+#    for result in tqdm(a_pool.imap(create_cosmic_temp_files, range(0,len(genes_group))), total=len(genes_group)):
+#        result_list_tqdm.append(result)
+
+    with gzip.open(pro_dir+outputn,'r') as f:
+        global total_cosmic_rec
+        total_cosmic_rec = len(f.readlines()) - 1 #removing the header for the count
+
+    a_pool = multiprocessing.Pool(processes=9)
+
+    result_list_tqdm = []
+    for result in tqdm(a_pool.imap(process_file, os.listdir(pro_dir+'temp/')), total=len(os.listdir(pro_dir+'temp/'))):
+        result_list_tqdm.append(result)
+
+#    read_files = glob.glob(out_dir+'temp/'+"*_prc.tsv")
+
+#    with open(out_dir+'COSMIC_'+cosmic_date+'.tsv', 'ab') as outfile:
+#        for f in read_files:
+#            with open(f, "rb") as infile:
+#                outfile.write(infile.read())
+
+#    outputc.close()
+
+#    shutil. rmtree(out_dir+'temp/')
+
+def process_xml_clinvar(ofile):
+
+    outputf = open(ofile,'a')
+
+    tree = ET.parse(xml_section)
+    root = tree.getroot()
+
+    #print (root.tag)
+    #print (root.attrib)
+    #for child in root:
+    #    print(child.tag, child.attrib)
+    for ClinVarSet in root.iter('ClinVarSet'):
+        (ACC, ASSEMBLY, CHR, VCF_POS, VCF_REF, VCF_ALT, SYMBOL, TRAIT, SIG) = ([], [], [], [], [], [], [], [], [])
+        for ReferenceClinVarAssertion in ClinVarSet.iter('ReferenceClinVarAssertion'):
+            for ClinVarAccession in ReferenceClinVarAssertion.iter('ClinVarAccession'):
+                ACC.append(ClinVarAccession.attrib['Acc'])
+            for MeasureSet in ReferenceClinVarAssertion.iter('MeasureSet'):
+                for Measure in MeasureSet.iter('Measure'):
+                    for SequenceLocation in Measure.iter('SequenceLocation'):
+                        if 'positionVCF' in SequenceLocation.attrib.keys():
+                            ASSEMBLY.append(SequenceLocation.attrib['Assembly'])
+                            CHR.append(SequenceLocation.attrib['Chr'])
+                            VCF_POS.append(SequenceLocation.attrib['positionVCF'])
+                            VCF_REF.append(SequenceLocation.attrib['referenceAlleleVCF'])
+                            VCF_ALT.append(SequenceLocation.attrib['alternateAlleleVCF'])
+                    for Symbol in Measure.iter('Symbol'):
+                        for ElementValue in Symbol.iter('ElementValue'):
+                            if ElementValue.attrib['Type'] == 'Preferred': SYMBOL.append(ElementValue.text)
+            for TraitSet in ReferenceClinVarAssertion.iter('TraitSet'):
+                for Trait in TraitSet:
+                    for Name in Trait.iter('Name'):
+                        for ElementValue in Name.iter('ElementValue'):
+                            if ElementValue.attrib['Type'] == 'Preferred': TRAIT.append(ElementValue.text)
+            for ClinicalSignificance in ReferenceClinVarAssertion.iter('ClinicalSignificance'):
+                for Description in ClinicalSignificance.iter('Description'):
+                    SIG.append(Description.text)
+
+        for idx in range(len(ASSEMBLY)):
+            outputf.write('\t'.join(['::'.join(list(set(ACC))),ASSEMBLY[idx],CHR[idx],VCF_POS[idx],VCF_REF[idx],VCF_ALT[idx],'::'.join(list(set(SYMBOL))),'::'.join(list(set(TRAIT))),'::'.join(list(set(SIG)))])+'\n')
+
+    outputf.close()
+
+def process_clinvar():
+
+    print('Processing ClinVar data...')
+
+    clinvar_file = 'ClinVarFullRelease_00-latest.xml.gz'
+
+    print('-->Filtering ClinVar...')
+
+    #filter records
+#    inputf = gzip.open(dwn_dir+clinvar_file,'rb')
+    outputn = clinvar_file.replace('.xml.gz','tagfiltered.xml.gz')
+#    outputf = gzip.open(pro_dir+outputn,'wb')
+
+#    for l in inputf:
+#        if re.search('xml|<ReleaseSet|</ReleaseSet|<ClinVarSet|</ClinVarSet|<ReferenceClinVarAssertion|</ReferenceClinVarAssertion|<ClinVarAccession|</ClinVarAccession|<MeasureSet|</MeasureSet|<Measure|</Measure|<SequenceLocation|</SequenceLocation|<Symbol|</Symbol|<ElementValue|</ElementValue|<TraitSet|</TraitSet|<Trait|</Trait|<Name|</Name|<ClinicalSignificance|</ClinicalSignificance|<Description|</Description',l.decode()):
+#            outputf.write(l)
+
+#    outputf.close()
+
+    print('-->Creating ClinVar file...')
+    #create tsv file
+    global xml_section
+    xml_section = pro_dir+'xml_temp.xml'
+    outputf = open(pro_dir+'Clinvar.tsv','w')
+    outputf.write('\t'.join(['Acc','Assembly','Chr','VCF_pos','VCF_ref','VCF_alt','Gene','Trait','Significance'])+'\n')
+    outputf.close()
+
+    #counter for ClinVarSet tag
+    counter = 0
+    xml = gzip.open(pro_dir+outputn, 'rb')
+
+    for line in xml:
+        line = line.decode()
+        if re.search('^<\?xml version|^<ReleaseSet|^</ReleaseSet',line):
+            continue
+        elif re.search('^<ClinVarSet',line) and counter == 0:
+            xml_section_file = open(xml_section,'w')
+            xml_section_file.write('<ReleaseSet Dated="2021-10-30" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" Type="full" xsi:noNamespaceSchemaLocation="http://ftp.ncbi.nlm.nih.gov/pub/clinvar/xsd_public/clinvar_public_1.64.xsd">'+'\n')
+            xml_section_file.write(line)
+        elif re.search('^</ClinVarSet',line):
+            #limit of tags per processing
+            if counter < 10000:
+                xml_section_file.write(line)
+                counter += 1
+            else:
+                xml_section_file.write(line)
+                xml_section_file.write('</ReleaseSet>')
+                xml_section_file.close()
+                counter = 0
+                process_xml_clinvar(pro_dir+'Clinvar.tsv')
+        else:
+            xml_section_file.write(line)
+
+    xml.close()
+    os.remove(xml_section)
+    os.remove(pro_dir+outputn)
+
 #process_DGIdb()
 #process_sabdab()
 #process_moalmanac()
 #process_GDSC()
 #process_KEGG_ATC()
+#process_cmap()
 #process_FDA()
 #process_FDA_label()
 #process_EMA()
@@ -907,3 +1296,11 @@ def process_oncoKB():
 #corregir a mano NKX2.1 que se interpreta como NKX2 y 1 por separado
 #process_civic()
 #process_oncoKB()
+#process_intogen()
+#process_depmap()
+#process_KEGG_pathways()
+#process_SL()
+
+#exclusive for genomic annotation
+#process_cosmic()
+process_clinvar()

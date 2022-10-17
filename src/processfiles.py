@@ -19,6 +19,7 @@ from scipy import stats
 import multiprocessing
 from tqdm import tqdm
 import numpy as np
+import glob
 
 #Set to the established download directory
 dwn_dir = '/home/epineiro/Analysis/PanDrugs/2.0/downloads/'
@@ -1050,8 +1051,10 @@ def process_SL():
     for dependency, frame in sel:
         dep_genes = []
         for index, row in sel.get_group(dependency).iterrows():
-            dep_genes.append(row['gene']+'('+row['alteration']+')')
-        outputf.write('\t'.join([dependency,'|'.join(dep_genes)])+'\n')
+            if not row['gene'] == dependency:
+                dep_genes.append(row['gene']+'('+row['alteration']+')')
+        if len(dep_genes) > 0:
+            outputf.write('\t'.join([dependency,'|'.join(dep_genes)])+'\n')
 
     outputf.close()
 
@@ -1117,24 +1120,21 @@ def process_cosmic():
 
     print('Processing COSMIC data...')
 
-    outputc = open(pro_dir+'COSMIC.tsv','a')
-    outputc.write('\t'.join(['Cosmic_key', 'cosmic_id', 'FATHMM', 'Gene_freq', 'Mut_freq', 'Total'])+'\n')
-
-#    print('-->Filtering COSMIC...')
-#    #filtering columns
-#    inputf = gzip.open(dwn_dir+cosmic_file,'r')
-#    first_line = inputf.readline().rstrip().decode().split('\t')
+    print('-->Filtering COSMIC...')
+    #filtering columns
+    inputf = gzip.open(dwn_dir+cosmic_file,'r')
+    first_line = inputf.readline().rstrip().decode().split('\t')
     global outputn
     outputn = cosmic_file.replace('.tsv.gz','.tsv.filtered.gz')
-#    select_column = ['Gene name', 'ID_sample', 'GENOMIC_MUTATION_ID', 'GRCh', 'Mutation genome position', 'FATHMM prediction', 'Mutation somatic status', 'HGVSC']
-#    inputf.close()
+    select_column = ['Gene name', 'ID_sample', 'GENOMIC_MUTATION_ID', 'GRCh', 'Mutation genome position', 'FATHMM prediction', 'Mutation somatic status', 'HGVSC']
+    inputf.close()
 
-#    #filtering records
-#    idx = [first_line.index(i) for i in select_column]
-#    cols = [str(i + 1) for i in idx]
-#     #algunos registros tienen el identificador vacio y no tienen por hgvsc (no los cuento)
-#    command = 'zcat '+dwn_dir+cosmic_file+' | cut -f '+','.join(cols)+' | awk -F"\t" \'($3 != "" && $4 == "38") || $1 == "Gene name" {print}\' | gzip > '+pro_dir+outputn
-#    subprocess.call(command,shell=True)
+    #filtering records
+    idx = [first_line.index(i) for i in select_column]
+    cols = [str(i + 1) for i in idx]
+     #algunos registros tienen el identificador vacio y no tienen por hgvsc (no los cuento)
+    command = 'zcat '+dwn_dir+cosmic_file+' | cut -f '+','.join(cols)+' | awk -F"\t" \'($3 != "" && $4 == "38") || $1 == "Gene name" {print}\' | gzip > '+pro_dir+outputn
+    subprocess.call(command,shell=True)
 
     #obtaining list of genes
     gfile = pro_dir+'gene_list.txt'
@@ -1153,12 +1153,12 @@ def process_cosmic():
     global genes_group
     genes_group = list(grouper(10, gene_list))
 
-#    os.mkdir(pro_dir+'temp/')
-#    a_pool = multiprocessing.Pool(processes=9)
+    os.mkdir(pro_dir+'temp/')
+    a_pool = multiprocessing.Pool(processes=9)
 
-#    result_list_tqdm = []
-#    for result in tqdm(a_pool.imap(create_cosmic_temp_files, range(0,len(genes_group))), total=len(genes_group)):
-#        result_list_tqdm.append(result)
+    result_list_tqdm = []
+    for result in tqdm(a_pool.imap(create_cosmic_temp_files, range(0,len(genes_group))), total=len(genes_group)):
+        result_list_tqdm.append(result)
 
     with gzip.open(pro_dir+outputn,'r') as f:
         global total_cosmic_rec
@@ -1170,16 +1170,15 @@ def process_cosmic():
     for result in tqdm(a_pool.imap(process_file, os.listdir(pro_dir+'temp/')), total=len(os.listdir(pro_dir+'temp/'))):
         result_list_tqdm.append(result)
 
-#    read_files = glob.glob(out_dir+'temp/'+"*_prc.tsv")
+    read_files = glob.glob(pro_dir+'temp/'+"*_prc.tsv")
+    pdb.set_trace()
+    with open(pro_dir+'COSMIC.tsv', 'ab') as outfile:
+        outfile.write(bytes('\t'.join(['Cosmic_key', 'cosmic_id', 'FATHMM', 'Gene_freq', 'Mut_freq', 'Total'])+'\n','utf-8'))
+        for f in read_files:
+            with open(f, "rb") as infile:
+                outfile.write(infile.read())
 
-#    with open(out_dir+'COSMIC_'+cosmic_date+'.tsv', 'ab') as outfile:
-#        for f in read_files:
-#            with open(f, "rb") as infile:
-#                outfile.write(infile.read())
-
-#    outputc.close()
-
-#    shutil. rmtree(out_dir+'temp/')
+    shutil. rmtree(pro_dir+'temp/')
 
 def process_xml_clinvar(ofile):
 
@@ -1232,15 +1231,15 @@ def process_clinvar():
     print('-->Filtering ClinVar...')
 
     #filter records
-#    inputf = gzip.open(dwn_dir+clinvar_file,'rb')
+    inputf = gzip.open(dwn_dir+clinvar_file,'rb')
     outputn = clinvar_file.replace('.xml.gz','tagfiltered.xml.gz')
-#    outputf = gzip.open(pro_dir+outputn,'wb')
+    outputf = gzip.open(pro_dir+outputn,'wb')
 
-#    for l in inputf:
-#        if re.search('xml|<ReleaseSet|</ReleaseSet|<ClinVarSet|</ClinVarSet|<ReferenceClinVarAssertion|</ReferenceClinVarAssertion|<ClinVarAccession|</ClinVarAccession|<MeasureSet|</MeasureSet|<Measure|</Measure|<SequenceLocation|</SequenceLocation|<Symbol|</Symbol|<ElementValue|</ElementValue|<TraitSet|</TraitSet|<Trait|</Trait|<Name|</Name|<ClinicalSignificance|</ClinicalSignificance|<Description|</Description',l.decode()):
-#            outputf.write(l)
+    for l in inputf:
+        if re.search('xml|<ReleaseSet|</ReleaseSet|<ClinVarSet|</ClinVarSet|<ReferenceClinVarAssertion|</ReferenceClinVarAssertion|<ClinVarAccession|</ClinVarAccession|<MeasureSet|</MeasureSet|<Measure|</Measure|<SequenceLocation|</SequenceLocation|<Symbol|</Symbol|<ElementValue|</ElementValue|<TraitSet|</TraitSet|<Trait|</Trait|<Name|</Name|<ClinicalSignificance|</ClinicalSignificance|<Description|</Description',l.decode()):
+            outputf.write(l)
 
-#    outputf.close()
+    outputf.close()
 
     print('-->Creating ClinVar file...')
     #create tsv file
@@ -1280,6 +1279,158 @@ def process_clinvar():
     os.remove(xml_section)
     os.remove(pro_dir+outputn)
 
+def process_pfam():
+
+    print('Processing Pfam data...')
+
+    pfam_file = 'Pfam-A.full.gz'
+
+    print('-->Filtering Pfam...')
+    #filter records
+    inputf = gzip.open(dwn_dir+pfam_file,'rb')
+    outputn = pfam_file.replace('.full.gz','.full.filtered.gz')
+    outputf = gzip.open(pro_dir+outputn,'wb')
+
+    for l in inputf:
+        if re.search('^#=GF ID|^#=GF AC|^#=GF DE|_HUMAN|^//',l.decode('latin-1')):
+            outputf.write(l)
+
+    outputf.close()
+
+    print('-->Creating Pfam file...')
+    #create tsv file
+    outputf = open(pro_dir+'Pfam-A.full.tsv','w')
+    outputf.write('\t'.join(['DOMAIN_ID','PFAM_ACC','DOMAIN_DESCRIPT','PROTEIN_NAME','PROTEIN_ACC','START','END'])+'\n')
+
+    filei = gzip.open(pro_dir+outputn,'rb')
+
+    (domain_id, pfam_acc, domain_des, protein_name, protein_acc, start, end) = ('', '', '', '', '', '', '')
+
+    for line in filei:
+        line = line.decode()
+        line = line.strip('\n')
+        line_a = line.split(' ')
+        if line_a[0] == '//':
+            (domain_id, pfam_acc, domain_des, protein_name, protein_acc, start, end) = ('', '', '', '', '', '', '')
+        else:
+            if line_a[1] == 'ID': domain_id = ' '.join(line_a[4:])
+            if line_a[1] == 'AC': pfam_acc = ' '.join(line_a[4:])
+            if line_a[1] == 'DE': domain_des = ' '.join(line_a[4:])
+            if line_a[0] == '#=GS' and len(line_a) > 10:
+                if 'AC' in line_a:
+                    protein_name = line_a[1].split('_')[0]
+                    protein_acc = line_a[line_a.index('AC')+1].split('.')[0]
+                    start = line_a[1].split('/')[1].split('-')[0]
+                    end = line_a[1].split('/')[1].split('-')[1]
+
+                    outputf.write('\t'.join([domain_id, pfam_acc, domain_des, protein_name, protein_acc, start, end])+'\n')
+
+    filei.close()
+    outputf.close()
+    os.remove(pro_dir+outputn)
+
+def process_interpro():
+
+    print('Processing Interpro data...')
+
+    interpro_file = 'match_complete.xml.gz'
+
+    #filter records
+    print('-->Filtering Interpro...')
+    inputf = gzip.open(dwn_dir+interpro_file,'rb')
+    outputn = interpro_file.replace('.xml.gz','.xml.filtered.gz')
+    outputf = gzip.open(pro_dir+outputn,'wb')
+
+    for line in inputf:
+        line = line.decode().rstrip()
+        if re.search('^<?xml', line) or re.search('interpromatch', line):
+            outputf.write(bytes(line+'\n','utf-8'))
+        elif re.search('<protein', line) and re.search('_HUMAN', line):
+            while line != '</protein>':
+                outputf.write(bytes(line+'\n','utf-8'))
+                line = next(inputf).decode().rstrip()
+            outputf.write(bytes(line+'\n','utf-8'))
+
+    inputf.close()
+    outputf.close()
+
+    print('-->Creating Interpro file...')
+
+    outputf = open(pro_dir+'Interpro.tsv','w')
+    outputf.write('\t'.join(['DOMAIN_ID','DOMAIN_DESCRIPT','PROTEIN_NAME','PROTEIN_ACC','START','END'])+'\n')
+
+    inputf = gzip.open(pro_dir+outputn,'rb')
+    tree = ET.parse(inputf)
+    root = tree.getroot()
+
+    for protein in root.iter('protein'):
+        (domain_id, pfam_acc, domain_des, protein_name, protein_acc, start, end) = ('', '', '', '', '', '', '')
+        protein_acc = protein.attrib['id']
+        protein_name = protein.attrib['name'].split('_')[0]
+
+        for match in protein.iter('match'):
+            for ipr in match.iter('ipr'):
+                domain_id = ipr.attrib['id']
+                domain_des = ipr.attrib['name']
+                for lcn in match.iter('lcn'):
+                    start = lcn.attrib['start']
+                    end = lcn.attrib['end']
+                    outputf.write('\t'.join([domain_id, domain_des, protein_name, protein_acc, start, end])+'\n')
+
+    outputf.close()
+    inputf.close()
+    os.remove(pro_dir+outputn)
+
+def process_uniprot():
+
+    print('Processing Uniprot data...')
+
+    uniprot_file = 'uniprot_sprot.xml.gz'
+
+    print('-->Filtering Uniprot...')
+    #filter records
+    inputf = gzip.open(dwn_dir+uniprot_file,'rb')
+    outputn = uniprot_file.replace('.xml.gz','.xml.filtered.gz')
+    outputf = gzip.open(pro_dir+outputn,'wb')
+
+    for l in inputf:
+        l = l.decode()
+        if re.search('\?xml|<uniprot|</uniprot|xmlns:|xsi:|<entry|</entry|<accession>|</accession>|<gene>|</gene>|<name .*type=\"primary\"|<organism>|<organism |</organism>|<name type=\"common\"',l):
+            if re.search('<uniprot',l): l = '<uniprot>\n'
+            if not re.search('^ xmlns:|^ xsi:',l):
+                l = re.sub(r' xmlns\=\"http\:\/\/uniprot.org\/uniprot\"','',l)
+                outputf.write(bytes(l,'utf-8'))
+
+    outputf.close()
+
+    print('-->Creating Uniprot file...')
+
+    outputf = open(pro_dir+'Uniprot.tsv','w')
+    outputf.write('\t'.join(['PROTEIN_ID','GENE_NAME','PUBMED_ID','dbSNP_ref'])+'\n')
+
+    inputf = gzip.open(pro_dir+outputn,'rb')
+    tree = ET.parse(inputf)
+    root = tree.getroot()
+
+#    for child in root:
+#        print(child.tag, child.attrib)
+
+    for entry in root.iter('entry'):
+        (protein_id, gene_name, organism) = ([], '', '')
+        for accession in entry.iter('accession'):
+            protein_id.append(accession.text)
+        for gene in entry.iter('gene'):
+            for name in gene.iter('name'):
+                gene_name = name.text
+        for organism in entry.iter('organism'):
+            for name in organism.iter('name'):
+                organism = name.text
+        if organism == 'Human':
+            outputf.write('\t'.join([';'.join(protein_id),gene_name,'',''])+'\n')
+
+    outputf.close()
+    os.remove(pro_dir+outputn)
+
 #process_DGIdb()
 #process_sabdab()
 #process_moalmanac()
@@ -1299,8 +1450,11 @@ def process_clinvar():
 #process_intogen()
 #process_depmap()
 #process_KEGG_pathways()
-#process_SL()
+process_SL()
 
 #exclusive for genomic annotation
 #process_cosmic()
-process_clinvar()
+#process_clinvar()
+#process_pfam()
+#process_interpro()
+#process_uniprot()

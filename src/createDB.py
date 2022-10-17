@@ -6,6 +6,13 @@ import pandas as pd
 from datetime import date
 import progressbar
 import math
+import sys
+
+if len(sys.argv) < 2:
+    print("python createDB.py level [being 1(create intermediate file), and 2(create final file)]")
+    sys.exit()
+else:
+    print(sys.argv)
 
 #Directory with the downloaded files
 dwn_dir = '/home/epineiro/Analysis/PanDrugs/2.0/downloads/'
@@ -205,7 +212,7 @@ def drug_gene_associations():
     print('-> Check the records with review comments and modify them accordingly')
     print('-> Check the associations of KRAS, TP53, STK11 and APC (using checked_gene_symbol column) with drugs (using standard_drug_name column) with a target relationship (using target_marker column) in PanDrugs file. Update them in the control_records.tsv file along with the corresponding tag (keep/exclude/target/marker).')
     print('-> Recover EGFR (using checked_gene_symbol column) - drug (using standard_drug_name column) associations with a target relationship (using target_marker column) in PanDrugs file. For each record create a MET-drug association and update them in the control_records.tsv file along with the corresponding tag (amp_resistance).')
-    print('Then re-run in update mode to create the final PanDrugs file.'+'\n'+'*****************')
+    print('Then re-run in create final file mode to create the final PanDrugs file.'+'\n'+'*****************')
 
 def create_final_file():
 
@@ -230,7 +237,8 @@ def create_final_file():
 
         for index, row in conres.loc[conres['reason'] == 'amp_resistance'].iterrows():
             dscore = -1
-            pandrugs.loc[len(pandrugs.index)] = [row['checked_gene_symbol'], row['checked_gene_symbol'], 'Curated', row['standard_drug_name'], row['standard_drug_name']]+['','','','','','','','']+['marker','resistance', 'amplification']+['','','','']
+            pandrugs = pandrugs.reset_index(drop=True)
+            pandrugs.loc[len(pandrugs.index)] = [row['checked_gene_symbol'], row['checked_gene_symbol'], 'Curated', row['standard_drug_name'], row['standard_drug_name']]+pandrugs.loc[pandrugs['standard_drug_name'] == row['standard_drug_name']][['show_drug_name', 'family', 'status', 'pathology', 'cancer', 'extra', 'extra2', 'pathways']].iloc[0].tolist()+['marker', 'resistance', 'amplification']+pandrugs.loc[pandrugs['standard_drug_name'] == row['standard_drug_name']][['ind_pathway', 'gene_dependency']].iloc()[0].tolist()+[dscore]+[pandrugs.loc[pandrugs['standard_drug_name'] == row['standard_drug_name']]['gscore'].tolist()[0]]+['']
 #descomentar en cuanto los dscores están integrados
 #            dscore = pandrugs.loc[pandrugs['standard_drug_name'] == row['standard_drug_name']][['dscore']].iloc[0].tolist() * -1
 #            pandrugs.loc[len(pandrugs.index)] = [row['checked_gene_symbol'], row['checked_gene_symbol'], 'Curated', row['standard_drug_name'], row['standard_drug_name']]+pandrugs.loc[pandrugs['standard_drug_name'] == row['standard_drug_name']][['show_drug_name', 'family', 'status', 'pathology', 'cancer', 'extra', 'extra2', 'pathways']].iloc[0].tolist()+['marker','resistance', 'amplification']+pandrugs.loc[pandrugs['standard_drug_name'] == row['standard_drug_name']][['ind_pathway']].iloc[0].tolist()+dscore+pandrugs.loc[pandrugs['standard_drug_name'] == row['standard_drug_name']][['gscore']].iloc[0].tolist()+['']
@@ -262,6 +270,9 @@ def create_pubchem_ids_file():
     outputf.close()
 
 load_files()
-drug_gene_associations()
-#create_final_file()
-#create_pubchem_ids_file()
+
+if sys.argv[1] == '1':
+    drug_gene_associations()
+else:
+    create_final_file()
+    create_pubchem_ids_file()

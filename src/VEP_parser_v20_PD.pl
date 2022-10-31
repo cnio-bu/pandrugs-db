@@ -157,23 +157,23 @@ exit;
 sub load_vars2 {
 #Load files into variables
 
-   	$cosmic_list1 = DBM::Deep->new("$dbdir/cosmic01.db");
-   	$cosmic_list2 = DBM::Deep->new("$dbdir/cosmic02.db");
-   	$cosmic_list3 = DBM::Deep->new("$dbdir/cosmic03.db");
-   	$cosmic_list4 = DBM::Deep->new("$dbdir/cosmic04.db");
-   	$cosmic_list5 = DBM::Deep->new("$dbdir/cosmic05.db");
-   	$cosmic_list6 = DBM::Deep->new("$dbdir/cosmic06.db");
-   	$cosmic_list7 = DBM::Deep->new("$dbdir/cosmic07.db");
-   	$cosmic_list8 = DBM::Deep->new("$dbdir/cosmic08.db");
-   	$cosmic_list9 = DBM::Deep->new("$dbdir/cosmic09.db");
-   	$cosmic_list10 = DBM::Deep->new("$dbdir/cosmic10.db");
-   	$cosmic_list11 = DBM::Deep->new("$dbdir/cosmic11.db");
-   	$cosmic_list12 = DBM::Deep->new("$dbdir/cosmic12.db");
-   	$cosmic_list13 = DBM::Deep->new("$dbdir/cosmic13.db");
-   	$cosmic_list14 = DBM::Deep->new("$dbdir/cosmic14.db");
-   	$cosmic_list15 = DBM::Deep->new("$dbdir/cosmic15.db");
-   	$cosmic_list16 = DBM::Deep->new("$dbdir/cosmic16.db");
-   	$cosmic_list17 = DBM::Deep->new("$dbdir/cosmic17.db");
+	$cosmic_list1 = DBM::Deep->new("$dbdir/cosmic01.db");
+	$cosmic_list2 = DBM::Deep->new("$dbdir/cosmic02.db");
+	$cosmic_list3 = DBM::Deep->new("$dbdir/cosmic03.db");
+	$cosmic_list4 = DBM::Deep->new("$dbdir/cosmic04.db");
+	$cosmic_list5 = DBM::Deep->new("$dbdir/cosmic05.db");
+	$cosmic_list6 = DBM::Deep->new("$dbdir/cosmic06.db");
+	$cosmic_list7 = DBM::Deep->new("$dbdir/cosmic07.db");
+	$cosmic_list8 = DBM::Deep->new("$dbdir/cosmic08.db");
+	$cosmic_list9 = DBM::Deep->new("$dbdir/cosmic09.db");
+	$cosmic_list10 = DBM::Deep->new("$dbdir/cosmic10.db");
+	$cosmic_list11 = DBM::Deep->new("$dbdir/cosmic11.db");
+	$cosmic_list12 = DBM::Deep->new("$dbdir/cosmic12.db");
+	$cosmic_list13 = DBM::Deep->new("$dbdir/cosmic13.db");
+	$cosmic_list14 = DBM::Deep->new("$dbdir/cosmic14.db");
+	$cosmic_list15 = DBM::Deep->new("$dbdir/cosmic15.db");
+	$cosmic_list16 = DBM::Deep->new("$dbdir/cosmic16.db");
+	$cosmic_list17 = DBM::Deep->new("$dbdir/cosmic17.db");
 
 	$genes_ids = DBM::Deep->new("$dbdir/genesids.db");
 
@@ -194,7 +194,7 @@ sub load_vars2 {
 
 	$clinvar = DBM::Deep->new("$dbdir/clinvar.db");
 
-    $generole = DBM::Deep->new("$dbdir/generole.db");
+	$generole = DBM::Deep->new("$dbdir/generole.db");
 
 }
 
@@ -232,7 +232,7 @@ sub VEP_Parser_Csv($$) {#Require a DB_conection and source data file
 
 	my %pos;
 
-    my $count = 0;
+	my $count = 0;
 
 	foreach my $i (0..$#rfile) {
 
@@ -256,8 +256,8 @@ sub VEP_Parser_Csv($$) {#Require a DB_conection and source data file
 				$pos{Feature} = $i if ($vep_fields[$i] eq "Feature");
 				$pos{PolyPhen} = $i if ($vep_fields[$i] eq "PolyPhen");
 				$pos{SIFT} = $i if ($vep_fields[$i] eq "SIFT");
-                $pos{CADD_PHRED} = $i if ($vep_fields[$i] eq "CADD_PHRED");
-                $pos{CADD_RAW} = $i if ($vep_fields[$i] eq "CADD_RAW");
+				$pos{CADD_PHRED} = $i if ($vep_fields[$i] eq "CADD_PHRED");
+				$pos{CADD_RAW} = $i if ($vep_fields[$i] eq "CADD_RAW");
 				$pos{SYMBOL} = $i if ($vep_fields[$i] eq "SYMBOL");
 				$pos{Protein_position} = $i if ($vep_fields[$i] eq "Protein_position");
 				$pos{Amino_acids} = $i if ($vep_fields[$i] eq "Amino_acids");
@@ -271,11 +271,10 @@ sub VEP_Parser_Csv($$) {#Require a DB_conection and source data file
 				$pos{cDNA_position} = $i if ($vep_fields[$i] eq "cDNA_position");
 				$pos{Codons} = $i if ($vep_fields[$i] eq "Codons");
 				$pos{VARIANT_CLASS} = $i if ($vep_fields[$i] eq "VARIANT_CLASS");
-                $pos{gnomAD} = $i if ($vep_fields[$i] eq "gnomAD_AF");
-                $pos{gnomAD_NFE} = $i if ($vep_fields[$i] eq "gnomAD_NFE_AF");
+				$pos{gnomAD} = $i if ($vep_fields[$i] eq "gnomAD_AF");
+				$pos{gnomAD_NFE} = $i if ($vep_fields[$i] eq "gnomAD_NFE_AF");
 				$pos{EXON} = $i if ($vep_fields[$i] eq "EXON");
 				$pos{APPRIS} = $i if ($vep_fields[$i] eq "APPRIS");
-
 			}
 
 		} else {

@@ -188,7 +188,7 @@ sub load_vars2 {
 	$interpro_a = DBM::Deep->new("$dbdir/interpro_a.db");
 	$last_domain = DBM::Deep->new("$dbdir/last_domain.db");
 
-	$essential = DBM::Deep->new("$dbdir/essential.db");
+	$depmap = DBM::Deep->new("$dbdir/depmap.db");
 
 	$cancer_domain = DBM::Deep->new("$dbdir/cancer_domain.db");
 
@@ -876,55 +876,30 @@ sub create_vscore() {
 			}
 
 			# Add scores
-			#Prediction score
-			if ($linedata[$scored_columns{poly_score}] && $linedata[$scored_columns{poly_score}] > 0.435) {
-				$score += (0.125 / 3) * (($linedata[$scored_columns{poly_score}] - 0.435) / (1 - 0.435));
-			}
-
-			if ($linedata[$scored_columns{sift_score}] ne "" && $linedata[$scored_columns{sift_score}] <= 0.05) {
-				$score += (0.125 / 3) * ((0.051 - $linedata[$scored_columns{sift_score}]) / (0.051 - 0));
-			}
-
-			if ($linedata[$scored_columns{CADD_phred}] && $linedata[$scored_columns{CADD_phred}] > 20) {
-				$score += (0.125 / 3) * (($linedata[$scored_columns{CADD_phred}] - 20) / (99 - 20));
-			}
-#print "pred:$score\n";
-
+			my $prediction_damaging = 0;
+			
 			#Cosmic ID
 			if ($linedata[$scored_columns{cosmic_id}] =~ /(COSV\d+):*/) {
 				if ($linedata[$scored_columns{cosmic_id}] =~ /PATHOGENIC/) {
-					if ($branch eq "ONC" || $branch eq "UNCLASSIFIED") {
-						$score += 0.125 / 3;
-					} else {
-						$score += 0.03125;
-					}
+					$prediction_damaging += 1;
 				}
 				if ($linedata[$scored_columns{mut_cosmic_freq}] && $linedata[$scored_columns{mut_cosmic_freq}] =~ /(\d+) \/ (\d+)/) {
 					if ($branch eq "ONC" || $branch eq "UNCLASSIFIED") {
 						my $ss;
 						if ($1 >= 100) {
-							$ss = 0.125 / 3;
+							$ss = 0.125 / 2;
 						} else {
-							$ss = (0.125 / 3) * ((log($1) - 0) / (log($2) - 0));
+							$ss = (0.125 / 2) * ((log($1) - 0) / (log($2) - 0));
 						}
 						$score += $ss;
 					}
 				}
 				if ($linedata[$scored_columns{gene_cosmic_freq}] && $linedata[$scored_columns{gene_cosmic_freq}] =~ /(\d+) \/ (\d+)/) {
 					my $ss;
-					if ($branch eq "ONC" || $branch eq "UNCLASSIFIED") {
-						if ($1 >= 100) {
-							$ss = 0.125 / 3;
-						} else {
-							$ss = (0.125 / 3) * ((log($1) - 0) / (log($2) - 0));
-						}
+					if ($1 >= 100) {
+						$ss = 0.125 / 2;
 					} else {
-						if ($1 >= 100) {
-							$ss = 0.03125;
-						} else {
-#print "$cosmic_gfreq_max\n";
-							$ss = 0.03125 * ((log($1) - 0) / (log($2) - 0));
-						}
+						$ss = (0.125 / 2) * ((log($1) - 0) / (log($2) - 0));
 					}
 					$score += $ss;
 				}
@@ -933,19 +908,44 @@ sub create_vscore() {
 				$cosmic_freq = 0;
 			}
 #print "cosm:$score\n";
+			#Prediction score
+			if ($linedata[$scored_columns{poly_score}] && $linedata[$scored_columns{poly_score}] > 0.435) {
+				$prediction_damaging += 1;
+			}
+
+			if ($linedata[$scored_columns{sift_score}] ne "" && $linedata[$scored_columns{sift_score}] <= 0.05) {
+				$prediction_damaging += 1;
+			}
+
+			if ($linedata[$scored_columns{CADD_phred}] && $linedata[$scored_columns{CADD_phred}] > 20) {
+				$prediction_damaging += 1;
+			}
+
+			if ($prediction_damaging >= 3) {
+				$score += 0.125;
+			} elsif ($prediction_damaging == 2) {
+				$score += 0.08;
+			} elsif ($prediction_damaging == 1) {
+				$score += 0.04
+			}
+#print "pred:$score\n";
 			#Mutation type
-			if ($linedata[$scored_columns{impact}] =~ /(HIGH|MODERATE)/) {
-				$score = ($score + 0.125);
+			if ($linedata[$scored_columns{impact}] =~ /(HIGH)/) {
+				$score += 0.125;
 			}
 #print "mut:$score\n";
 			#Frequencies
 			if ($linedata[$scored_columns{GMAF}] ne "") {
-				$score = ($score + 0.125 / 2) if ($linedata[$scored_columns{GMAF}] < 1);
+				if ($linedata[$scored_columns{GMAF}] < 1) {
+					$score += 0.125 / 2;
+				}
 			} else {
 				$score = ($score + 0.125 / 2);
 			}
 			if ($linedata[$scored_columns{gnomAD}] ne "") {
-				$score = ($score + 0.125 / 2) if ($linedata[$scored_columns{gnomAD}] < 1);
+				if ($linedata[$scored_columns{gnomAD}] < 1) {
+					$score += 0.125 / 2;
+				}
 			} else {
 				$score = ($score + 0.125 / 2);
 			}
@@ -983,11 +983,9 @@ sub create_vscore() {
 				}
 			}
 #print "hom:$score\n";
-			#Essentiality score
-			if (exists($essential->{$linedata[$scored_columns{gene_hgnc}]})) {
-				$score += (0.125 * $essential->{$linedata[$scored_columns{gene_hgnc}]});
-			}
-#print "es:$score\n";
+			#DepMap
+			
+
 			push @{$vep_file[$i]}, (sprintf("%.4f", $score), $branch);
 
 		}

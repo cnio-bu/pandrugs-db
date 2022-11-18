@@ -1,0 +1,11 @@
+---
+channels:
+  - bu_cnio
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - perl-dbi =1.643
+  - perl-libwww-perl =6.67
+  - perl-archive-extract =0.88
+  - perl-clone =0.46

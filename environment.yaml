@@ -5,7 +5,8 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - perl-dbi =1.643
-  - perl-libwww-perl =6.67
   - perl-archive-extract =0.88
-  - perl-clone =0.46
+  - perl-dbm-deep =2.0016
+  - perl-exporter-tiny =1.002002
+  - perl-list-moreutils =0.430
+  - perl-parallel-forkmanager =2.02

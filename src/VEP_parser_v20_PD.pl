@@ -188,7 +188,7 @@ sub load_vars2 {
 	$interpro_a = DBM::Deep->new("$dbdir/interpro_a.db");
 	$last_domain = DBM::Deep->new("$dbdir/last_domain.db");
 
-	$depmap = DBM::Deep->new("$dbdir/depmap.db");
+	$essential = DBM::Deep->new("$dbdir/essential.db");
 
 	$cancer_domain = DBM::Deep->new("$dbdir/cancer_domain.db");
 

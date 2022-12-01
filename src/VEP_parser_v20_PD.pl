@@ -985,11 +985,11 @@ sub create_vscore() {
 #print "hom:$score\n";
 			#DepMap
 			if (exists($essential->{$linedata[$scored_columns{gene_hgnc}]})) {
-                if ($essential->{$linedata[$scored_columns{gene_hgnc}]}[0] < -2) {
-                    $score += 0.2;
-                } elsif ($essential->{$linedata[$scored_columns{gene_hgnc}]}[0] <= -0.5) {
-                    $score += 0.2 * ($essential->{$linedata[$scored_columns{gene_hgnc}]}[0] - $essential->{$linedata[$scored_columns{gene_hgnc}]}[1]) / (-2 - $essential->{$linedata[$scored_columns{gene_hgnc}]}[1]);
-                }
+                            if ($essential->{$linedata[$scored_columns{gene_hgnc}]}[0] < -2) {
+                                $score += 0.2;
+                            } elsif ($essential->{$linedata[$scored_columns{gene_hgnc}]}[0] <= -0.5) {
+                                $score += 0.2 * ($essential->{$linedata[$scored_columns{gene_hgnc}]}[0] - $essential->{$linedata[$scored_columns{gene_hgnc}]}[1]) / (-2 - $essential->{$linedata[$scored_columns{gene_hgnc}]}[1]);
+                            }
 			}
 
 			push @{$vep_file[$i]}, (sprintf("%.4f", $score), $branch);

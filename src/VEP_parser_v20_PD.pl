@@ -1,4 +1,5 @@
 ##!/usr/bin/perl
+use lib "modules/";
 use strict;
 use warnings;
 use Time::HiRes;
@@ -17,8 +18,8 @@ use List::MoreUtils qw(uniq);
 my $outdir = "./output/";
 my $dbdir;
 my $outpath = getcwd;
-my (%cosmic_list1, %cosmic_list2, %cosmic_list3, %cosmic_list4, %cosmic_list5, %cosmic_list6, %cosmic_list7, %cosmic_list8, %cosmic_list9, %cosmic_list10, %cosmic_list11, %cosmic_list12, %cosmic_list13, %cosmic_list14, %cosmic_list15, %cosmic_list16, %cosmic_list17);
-my ($cosmic_list1, $cosmic_list2, $cosmic_list3, $cosmic_list4, $cosmic_list5, $cosmic_list6, $cosmic_list7, $cosmic_list8, $cosmic_list9, $cosmic_list10, $cosmic_list11, $cosmic_list12, $cosmic_list13, $cosmic_list14, $cosmic_list15, $cosmic_list16, $cosmic_list17);
+my (%cosmic_list1, %cosmic_list2, %cosmic_list3, %cosmic_list4, %cosmic_list5, %cosmic_list6, %cosmic_list7, %cosmic_list8, %cosmic_list9, %cosmic_list10, %cosmic_list11, %cosmic_list12, %cosmic_list13, %cosmic_list14, %cosmic_list15, %cosmic_list16, %cosmic_list17, %cosmic_list18, %cosmic_list19, %cosmic_list20, %cosmic_list21, %cosmic_list22, %cosmic_list23, %cosmic_list24, %cosmic_list25, %cosmic_list26);
+my ($cosmic_list1, $cosmic_list2, $cosmic_list3, $cosmic_list4, $cosmic_list5, $cosmic_list6, $cosmic_list7, $cosmic_list8, $cosmic_list9, $cosmic_list10, $cosmic_list11, $cosmic_list12, $cosmic_list13, $cosmic_list14, $cosmic_list15, $cosmic_list16, $cosmic_list17, $cosmic_list18, $cosmic_list19, $cosmic_list20, $cosmic_list21, $cosmic_list22, $cosmic_list23, $cosmic_list24, $cosmic_list25, $cosmic_list26);
 my $vep_results_file;
 my $logfile = "";
 my %pathw_desc;
@@ -41,14 +42,14 @@ my ($pfam_a, $uniprot_b, $interpro_a);
 
 my %zygosity;
 my %last_domain;
-my %essential;
+my %gscore;
 my %cancer_domain;
 my %clinvar;
 my %appris;
 
 my $generole;
 my $last_domain;
-my $essential;
+my $gscore;
 my $cancer_domain;
 my $clinvar;
 my $appris;
@@ -66,8 +67,8 @@ for my $a (0..$#ARGV){
 		case /^((\-\-vepfile=)|(\-f=))/ {
 			$ARGV[$a] =~ /\-(\-vepfile|f)=(.+)/;
 			$vep_results_file = $2 ? $2 : die "\nEmpty argument. Please enter the parameter information.\n\neg. -f=file.vcf\n\n";
-            my @vep_results_file_tmp = glob ("$2");
-            $vep_results_file = $vep_results_file_tmp[0];
+			my @vep_results_file_tmp = glob ("$2");
+			$vep_results_file = $vep_results_file_tmp[0];
 		}
 
 		# Output file
@@ -144,7 +145,7 @@ mkpath($outexp);
 &VEP_Parser_Csv;
 
 $end = Time::HiRes::gettimeofday();
-$time =  sprintf("%.2f", $end - $start);
+$time = sprintf("%.2f", $end - $start);
 printl ("\nTotal time: $time seconds\n");
 
 # Log file creation
@@ -157,23 +158,32 @@ exit;
 sub load_vars2 {
 #Load files into variables
 
-   	$cosmic_list1 = DBM::Deep->new("$dbdir/cosmic01.db");
-   	$cosmic_list2 = DBM::Deep->new("$dbdir/cosmic02.db");
-   	$cosmic_list3 = DBM::Deep->new("$dbdir/cosmic03.db");
-   	$cosmic_list4 = DBM::Deep->new("$dbdir/cosmic04.db");
-   	$cosmic_list5 = DBM::Deep->new("$dbdir/cosmic05.db");
-   	$cosmic_list6 = DBM::Deep->new("$dbdir/cosmic06.db");
-   	$cosmic_list7 = DBM::Deep->new("$dbdir/cosmic07.db");
-   	$cosmic_list8 = DBM::Deep->new("$dbdir/cosmic08.db");
-   	$cosmic_list9 = DBM::Deep->new("$dbdir/cosmic09.db");
-   	$cosmic_list10 = DBM::Deep->new("$dbdir/cosmic10.db");
-   	$cosmic_list11 = DBM::Deep->new("$dbdir/cosmic11.db");
-   	$cosmic_list12 = DBM::Deep->new("$dbdir/cosmic12.db");
-   	$cosmic_list13 = DBM::Deep->new("$dbdir/cosmic13.db");
-   	$cosmic_list14 = DBM::Deep->new("$dbdir/cosmic14.db");
-   	$cosmic_list15 = DBM::Deep->new("$dbdir/cosmic15.db");
-   	$cosmic_list16 = DBM::Deep->new("$dbdir/cosmic16.db");
-   	$cosmic_list17 = DBM::Deep->new("$dbdir/cosmic17.db");
+	$cosmic_list1 = DBM::Deep->new("$dbdir/cosmic01.db");
+	$cosmic_list2 = DBM::Deep->new("$dbdir/cosmic02.db");
+	$cosmic_list3 = DBM::Deep->new("$dbdir/cosmic03.db");
+	$cosmic_list4 = DBM::Deep->new("$dbdir/cosmic04.db");
+	$cosmic_list5 = DBM::Deep->new("$dbdir/cosmic05.db");
+	$cosmic_list6 = DBM::Deep->new("$dbdir/cosmic06.db");
+	$cosmic_list7 = DBM::Deep->new("$dbdir/cosmic07.db");
+	$cosmic_list8 = DBM::Deep->new("$dbdir/cosmic08.db");
+	$cosmic_list9 = DBM::Deep->new("$dbdir/cosmic09.db");
+	$cosmic_list10 = DBM::Deep->new("$dbdir/cosmic10.db");
+	$cosmic_list11 = DBM::Deep->new("$dbdir/cosmic11.db");
+	$cosmic_list12 = DBM::Deep->new("$dbdir/cosmic12.db");
+	$cosmic_list13 = DBM::Deep->new("$dbdir/cosmic13.db");
+	$cosmic_list14 = DBM::Deep->new("$dbdir/cosmic14.db");
+	$cosmic_list15 = DBM::Deep->new("$dbdir/cosmic15.db");
+	$cosmic_list16 = DBM::Deep->new("$dbdir/cosmic16.db");
+	$cosmic_list17 = DBM::Deep->new("$dbdir/cosmic17.db");
+	$cosmic_list18 = DBM::Deep->new("$dbdir/cosmic18.db");
+	$cosmic_list19 = DBM::Deep->new("$dbdir/cosmic19.db");
+	$cosmic_list20 = DBM::Deep->new("$dbdir/cosmic20.db");
+	$cosmic_list21 = DBM::Deep->new("$dbdir/cosmic21.db");
+	$cosmic_list22 = DBM::Deep->new("$dbdir/cosmic22.db");
+	$cosmic_list23 = DBM::Deep->new("$dbdir/cosmic23.db");
+	$cosmic_list24 = DBM::Deep->new("$dbdir/cosmic24.db");
+	$cosmic_list25 = DBM::Deep->new("$dbdir/cosmic25.db");
+	$cosmic_list26 = DBM::Deep->new("$dbdir/cosmic26.db");
 
 	$genes_ids = DBM::Deep->new("$dbdir/genesids.db");
 
@@ -188,13 +198,13 @@ sub load_vars2 {
 	$interpro_a = DBM::Deep->new("$dbdir/interpro_a.db");
 	$last_domain = DBM::Deep->new("$dbdir/last_domain.db");
 
-	$essential = DBM::Deep->new("$dbdir/essential.db");
+	$gscore = DBM::Deep->new("$dbdir/gscore.db");
 
 	$cancer_domain = DBM::Deep->new("$dbdir/cancer_domain.db");
 
 	$clinvar = DBM::Deep->new("$dbdir/clinvar.db");
 
-    $generole = DBM::Deep->new("$dbdir/generole.db");
+	$generole = DBM::Deep->new("$dbdir/generole.db");
 
 }
 
@@ -232,7 +242,7 @@ sub VEP_Parser_Csv($$) {#Require a DB_conection and source data file
 
 	my %pos;
 
-    my $count = 0;
+	my $count = 0;
 
 	foreach my $i (0..$#rfile) {
 
@@ -245,7 +255,7 @@ sub VEP_Parser_Csv($$) {#Require a DB_conection and source data file
 		}
 		elsif ($rfile[$i] =~ /^[^#]/) {
 			$data = $data . $rfile[$i];
-            $count++;
+			$count++;
 		}
 		elsif ($rfile[$i] =~ /^##INFO=<ID=CSQ.+Format: (.+)">/) {
 			my @vep_fields = split ('\|', $1);
@@ -256,8 +266,8 @@ sub VEP_Parser_Csv($$) {#Require a DB_conection and source data file
 				$pos{Feature} = $i if ($vep_fields[$i] eq "Feature");
 				$pos{PolyPhen} = $i if ($vep_fields[$i] eq "PolyPhen");
 				$pos{SIFT} = $i if ($vep_fields[$i] eq "SIFT");
-                $pos{CADD_PHRED} = $i if ($vep_fields[$i] eq "CADD_PHRED");
-                $pos{CADD_RAW} = $i if ($vep_fields[$i] eq "CADD_RAW");
+				$pos{CADD_PHRED} = $i if ($vep_fields[$i] eq "CADD_PHRED");
+				$pos{CADD_RAW} = $i if ($vep_fields[$i] eq "CADD_RAW");
 				$pos{SYMBOL} = $i if ($vep_fields[$i] eq "SYMBOL");
 				$pos{Protein_position} = $i if ($vep_fields[$i] eq "Protein_position");
 				$pos{Amino_acids} = $i if ($vep_fields[$i] eq "Amino_acids");
@@ -271,21 +281,21 @@ sub VEP_Parser_Csv($$) {#Require a DB_conection and source data file
 				$pos{cDNA_position} = $i if ($vep_fields[$i] eq "cDNA_position");
 				$pos{Codons} = $i if ($vep_fields[$i] eq "Codons");
 				$pos{VARIANT_CLASS} = $i if ($vep_fields[$i] eq "VARIANT_CLASS");
-                $pos{gnomAD} = $i if ($vep_fields[$i] eq "gnomAD_AF");
-                $pos{gnomAD_NFE} = $i if ($vep_fields[$i] eq "gnomAD_NFE_AF");
+				$pos{gnomAD} = $i if ($vep_fields[$i] eq "gnomAD_AF");
+				$pos{gnomAD_NFE} = $i if ($vep_fields[$i] eq "gnomAD_NFE_AF");
 				$pos{EXON} = $i if ($vep_fields[$i] eq "EXON");
 				$pos{APPRIS} = $i if ($vep_fields[$i] eq "APPRIS");
 
 			}
 
 		} else {
-            
-        }
+
+		}
 
 	}
 
 	# Save modifications to ensembl_vep.csv
-    my $outexp_path = $outexp;
+	my $outexp_path = $outexp;
 	$outexp_path =~ s/^\.//g;
 
 	$outpath .= $outexp_path;
@@ -301,11 +311,11 @@ sub VEP_Parser_Csv($$) {#Require a DB_conection and source data file
 
 	my @last_gene = ("","","","");
 
-    print "\n\nCreating annotations for $count variants...\n";
+	print "\n\nCreating annotations for $count variants...\n";
 
-    open (INPUT, "$outexp/ensembl_vep.csv");
-    my $ensemblhead = "";
-    my $chr = "";
+	open (INPUT, "$outexp/ensembl_vep.csv");
+	my $ensemblhead = "";
+	my $chr = "";
 	my $filechr = "";
 	my @chr_names = ();
 	while (<INPUT>) {
@@ -313,7 +323,7 @@ sub VEP_Parser_Csv($$) {#Require a DB_conection and source data file
 			$ensemblhead = $_;
 		} else {
 			my @line = split ("\t", $_);
-            if ($line[0] ne $chr) {
+			if ($line[0] ne $chr) {
 				$chr = $line[0];
 				push (@chr_names, $chr);
 				if ($filechr ne "") {close $filechr}
@@ -332,94 +342,94 @@ sub VEP_Parser_Csv($$) {#Require a DB_conection and source data file
 
 	DATA_LOOP:
 	foreach $chr(@chr_names) {
-        print "Processing chromosome $chr...\n";
+		print "Processing chromosome $chr...\n";
 		&load_vars2;
 		my $pid = $pm->start and next DATA_LOOP;
-        open (INPUT, "$outexp/ensembl_vep_$chr.csv");
-       	open (OUT, ">$outexp/vep_data_$chr.csv");
-   	   	open (OUTSORT, ">$outexp/vep_data_sorted_$chr.csv");
+		open (INPUT, "$outexp/ensembl_vep_$chr.csv");
+		open (OUT, ">$outexp/vep_data_$chr.csv");
+		open (OUTSORT, ">$outexp/vep_data_sorted_$chr.csv");
 
-        print OUT "Chr\tLoc\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tsample\tmut\tlocation\tallele\tgene\tfeature\tfeature_type\tconsequence\timpact\tcdna_position\tcds_position\tprotein_position\tamino_acids\tcodons\texisting_variation\textra\tprincipal\tpoly_effect\tpoly_score\tsift_effect\tsift_score\tCADD_phred\tCADD_raw\tgene_hgnc\tgene_role\tcosmic_id\tKEGG_data\tKEGG_path_id\tclinvar_acc\tclinvar_disease\tclinvar_clinical_significance\tvariation_type\tHGVS_cDNA\tHGVS_protein\tGMAF\tgnomAD\tgnomAD_NFE\tpfam\tinterpro\tgene_cosmic_freq\tmut_cosmic_freq\tvscore\tbranch\tzygosity\n";
+		print OUT "Chr\tLoc\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tsample\tmut\tlocation\tallele\tgene\tfeature\tfeature_type\tconsequence\timpact\tcdna_position\tcds_position\tprotein_position\tamino_acids\tcodons\texisting_variation\textra\tprincipal\tpoly_effect\tpoly_score\tsift_effect\tsift_score\tCADD_phred\tCADD_raw\tgene_hgnc\tgene_role\tcosmic_id\tKEGG_data\tKEGG_path_id\tclinvar_acc\tclinvar_disease\tclinvar_clinical_significance\tvariation_type\tHGVS_cDNA\tHGVS_protein\tGMAF\tgnomAD\tgnomAD_NFE\tpfam\tinterpro\tgene_cosmic_freq\tmut_cosmic_freq\tvscore\tbranch\tzygosity\n";
 
-        print OUTSORT "chr\tloc\tmut\tgene\tfeature\tfeature_type\tconsequence\timpact\tprincipal\tpoly_effect\tpoly_score\tsift_effect\tsift_score\tCADD_phred\tCADD_raw\tgene_hgnc\tgene_role\tcosmic_id\tkegg_data\tkegg_path_id\tprotein_position\tamino_acids\tclinvar_acc\tclinvar_disease\tclinvar_clinical_significance\tvariation_type\tHGVS_cDNA\tHGVS_protein\tGMAF\tgnomAD\tgnomAD_NFE\tpfam\tinterpro\tgene_cosmic_freq\tmut_cosmic_freq\tvscore\tbranch\tzygosity\n";
+		print OUTSORT "chr\tloc\tmut\tgene\tfeature\tfeature_type\tconsequence\timpact\tprincipal\tpoly_effect\tpoly_score\tsift_effect\tsift_score\tCADD_phred\tCADD_raw\tgene_hgnc\tgene_role\tcosmic_id\tkegg_data\tkegg_path_id\tprotein_position\tamino_acids\tclinvar_acc\tclinvar_disease\tclinvar_clinical_significance\tvariation_type\tHGVS_cDNA\tHGVS_protein\tGMAF\tgnomAD\tgnomAD_NFE\tpfam\tinterpro\tgene_cosmic_freq\tmut_cosmic_freq\tvscore\tbranch\tzygosity\n";
 
-        $count = 1;
-        while (<INPUT>) {
-            unless ($_ =~ /^CHROM/) {
-                chomp $_;
-                my @line = split ("\t", $_);
+		$count = 1;
+		while (<INPUT>) {
+			unless ($_ =~ /^CHROM/) {
+				chomp $_;
+				my @line = split ("\t", $_);
 
-    			$line[0] =~ s/chr//;
-    			$line[2] = "" if ($line[2] eq ".");
+				$line[0] =~ s/chr//;
+				$line[2] = "" if ($line[2] eq ".");
 
-                my $VCF_pos = $line[1];
-                my $VCF_ref = $line[3];
-                my $VCF_alt = $line[4];
+				my $VCF_pos = $line[1];
+				my $VCF_ref = $line[3];
+				my $VCF_alt = $line[4];
 
-			    if ((length($line[3]) ne length($line[4])) && ($line[4] !~ /,/)) {
-				    if (length($line[3]) > length($line[4])) {
-					    #Puede haber una deleción interna que no se procesaría correctamente
-					    if ($line[3] =~ /^$line[4]/) {
-						    $line[3] =~ s/^$line[4]//;
-						    $line[1] = $line[1] + length($line[4]);
-						    $line[4] = "-";
-					    }
-				    } else {
-					    #Puede haber una inserción interna que no se procesaría correctamente (ej. TGCTCTACC/TATAGATCGGAAGCTCTACC)
-					    if ($line[4] =~ /^$line[3]/) {
-						    $line[4] =~ s/^$line[3]//;
-						    $line[1] = $line[1] + length($line[3]);
-						    $line[3] = "-";
-					    }
-				    }
-			    }
+				if ((length($line[3]) ne length($line[4])) && ($line[4] !~ /,/)) {
+					if (length($line[3]) > length($line[4])) {
+						#Puede haber una deleción interna que no se procesaría correctamente
+						if ($line[3] =~ /^$line[4]/) {
+							$line[3] =~ s/^$line[4]//;
+							$line[1] = $line[1] + length($line[4]);
+							$line[4] = "-";
+						}
+					} else {
+						#Puede haber una inserción interna que no se procesaría correctamente (ej. TGCTCTACC/TATAGATCGGAAGCTCTACC)
+						if ($line[4] =~ /^$line[3]/) {
+							$line[4] =~ s/^$line[3]//;
+							$line[1] = $line[1] + length($line[3]);
+							$line[3] = "-";
+						}
+					}
+				}
 
-    			$line[10] = $line[3] . "/" . $line[4];
+				$line[10] = $line[3] . "/" . $line[4];
 
-    			$line[11] = $line[0] . ":" . $line[1];
+				$line[11] = $line[0] . ":" . $line[1];
 
 				if ($line[9]) {
 					my @gentype = split(":", $line[9]);
 					if ($gentype[0] eq "1/1") {
-	       				$zygosity{"$line[0]_$line[1]_$line[10]"} = "Homozygous";
-				    }
-				    else {
-	       				$zygosity{"$line[0]_$line[1]_$line[10]"} = "Heterozygous";
-				    }
+						$zygosity{"$line[0]_$line[1]_$line[10]"} = "Homozygous";
+					}
+					else {
+						$zygosity{"$line[0]_$line[1]_$line[10]"} = "Heterozygous";
+					}
 				} else {
 					$zygosity{"$line[0]_$line[1]_$line[10]"} = "";
 				}
 
-                my @q_data;
+				my @q_data;
 
-       			if ($line[7] =~ /CSQ=(.+)/) {
-    				my @trans = split (",", $1);
-    				foreach my $t (0..$#trans) {
-	    				my $transcript = "";
-	    				my $pol_cons = "";
-	    				my $pol_sco = "";
-	    				my $sift_cons = "";
-	    				my $sift_sco = "";
-                        my $CADD_phred = "";
-                        my $CADD_raw = "";
-	    				my $cosmic_id = "";
-	    				my $cosmic_fathmm = "";
-                        my $gene_freq = "";
-                        my $mut_freq = "";
-                        my $cosmic_total = "";
-	    				my $kegg_data = "";
-	    				my $kegg_ids = "";
-	    				my $clinvar_acc = "";
-	    				my $clinvar_dis = "";
-	    				my $clinvar_pat = "";
-    					my $HGVSc = "";
-    					my $HGVSp = "";
-    					my $GMAF = "";
-    					my $uniprot = "";
-    					my $pfam = "";
-    					my $interpro = "";
+				if ($line[7] =~ /CSQ=(.+)/) {
+					my @trans = split (",", $1);
+					foreach my $t (0..$#trans) {
+						my $transcript = "";
+						my $pol_cons = "";
+						my $pol_sco = "";
+						my $sift_cons = "";
+						my $sift_sco = "";
+						my $CADD_phred = "";
+						my $CADD_raw = "";
+						my $cosmic_id = "";
+						my $cosmic_fathmm = "";
+						my $gene_freq = "";
+						my $mut_freq = "";
+						my $cosmic_total = "";
+						my $kegg_data = "";
+						my $kegg_ids = "";
+						my $clinvar_acc = "";
+						my $clinvar_dis = "";
+						my $clinvar_pat = "";
+						my $HGVSc = "";
+						my $HGVSp = "";
+						my $GMAF = "";
+						my $uniprot = "";
+						my $pfam = "";
+						my $interpro = "";
 						my $var_type = "";
-	                    my $gnomAD = "";
+						my $gnomAD = "";
 						my $gnomAD_NFE = "";
 
 						my @fields = split ('\|', $trans[$t]);
@@ -427,13 +437,13 @@ sub VEP_Parser_Csv($$) {#Require a DB_conection and source data file
 						$fields[$pos{Consequence}] =~ s/&/,/g;
 						$fields[$pos{Existing_variation}] =~ s/&/,/g if ($fields[$pos{Existing_variation}]);
 
-    					if ($fields[$pos{HGVSp}] && $fields[$pos{HGVSp}] =~ /:(.+)/) {
-    						$HGVSp = $1;
-    					}
+						if ($fields[$pos{HGVSp}] && $fields[$pos{HGVSp}] =~ /:(.+)/) {
+							$HGVSp = $1;
+						}
 
-    					if ($fields[$pos{HGVSc}] && $fields[$pos{HGVSc}] =~ /:(.+)/) {
-    						$HGVSc = $1;
-    					}
+						if ($fields[$pos{HGVSc}] && $fields[$pos{HGVSc}] =~ /:(.+)/) {
+							$HGVSc = $1;
+						}
 
 						if ($fields[$pos{PolyPhen}] && $fields[$pos{PolyPhen}] =~ /(\w+)\((\d+\.*\d*)\)/) {
 							$pol_cons = $1;
@@ -445,98 +455,98 @@ sub VEP_Parser_Csv($$) {#Require a DB_conection and source data file
 #							$pol_sco = 1;
 #						}
 
-    					if ($fields[$pos{SIFT}] && $fields[$pos{SIFT}] =~ /(\w+)\((\d+\.*\d*)\)/) {
-    						$sift_cons = $1;
-    						$sift_sco = $2;
-    					}
+						if ($fields[$pos{SIFT}] && $fields[$pos{SIFT}] =~ /(\w+)\((\d+\.*\d*)\)/) {
+							$sift_cons = $1;
+							$sift_sco = $2;
+						}
 
-#    					elsif ($fields[$pos{Consequence}] =~ /stop_gained/ || $fields[$pos{Consequence}] =~ /frameshift_variant/) {
-#    						$sift_cons = "inferred";
-#    						$sift_sco = 0;
-#    					}
+#						elsif ($fields[$pos{Consequence}] =~ /stop_gained/ || $fields[$pos{Consequence}] =~ /frameshift_variant/) {
+#							$sift_cons = "inferred";
+#							$sift_sco = 0;
+#						}
 
-                        $CADD_phred = $fields[$pos{CADD_PHRED}];
-                        $CADD_raw = $fields[$pos{CADD_RAW}];
+						$CADD_phred = $fields[$pos{CADD_PHRED}];
+						$CADD_raw = $fields[$pos{CADD_RAW}];
 
-  						if ($fields[$pos{HGVSc}]) {
+						if ($fields[$pos{HGVSc}]) {
 							($cosmic_id, $cosmic_fathmm, $gene_freq, $mut_freq, $cosmic_total) = &chkmut_cosmic($fields[$pos{SYMBOL}], $fields[$pos{Feature}], $HGVSc);
 							$cosmic_id .= ":$cosmic_fathmm" if ($cosmic_fathmm);
-                            $gene_freq = $gene_freq if ($gene_freq);
-                            $mut_freq = $mut_freq if ($mut_freq);
-  						}
+							$gene_freq = $gene_freq if ($gene_freq);
+							$mut_freq = $mut_freq if ($mut_freq);
+						}
 
-   						if ($fields[$pos{SYMBOL}]) {
-                            if ($fields[$pos{SYMBOL}] ne $last_gene[0]) {
-							    #Get information about gene symbol: pathway_description, pathway_ids and entrez_gene_id
-       							@last_gene = get_kegg_id_sym(uc($fields[$pos{SYMBOL}]));
-   	    					}
-   		    				$kegg_data = $last_gene[1];
-   			    			$kegg_ids = $last_gene[2];
+						if ($fields[$pos{SYMBOL}]) {
+							if ($fields[$pos{SYMBOL}] ne $last_gene[0]) {
+								#Get information about gene symbol: pathway_description, pathway_ids and entrez_gene_id
+								@last_gene = get_kegg_id_sym(uc($fields[$pos{SYMBOL}]));
+							}
+							$kegg_data = $last_gene[1];
+							$kegg_ids = $last_gene[2];
 
-                        }
+						}
 
 						$var_type = $fields[$pos{"VARIANT_CLASS"}];
 
-    					if ($fields[$pos{GMAF}]) {
-    						my $num = $fields[$pos{GMAF}];
+						if ($fields[$pos{GMAF}]) {
+							my $num = $fields[$pos{GMAF}];
 							my @GMAF_a = split ("&", $fields[$pos{GMAF}]);
 							foreach my $gf (@GMAF_a) {
 								if ($gf ne "") {
 									$GMAF = $gf * 100;
 								}
 							}
-    					}
+						}
 
-                        if (exists($clinvar->{"$line[0]:$VCF_pos:$VCF_ref:$VCF_alt"})) {
-     						$clinvar_acc = @{$clinvar->{"$line[0]:$VCF_pos:$VCF_ref:$VCF_alt"}}[1];
-  	    					$clinvar_dis = @{$clinvar->{"$line[0]:$VCF_pos:$VCF_ref:$VCF_alt"}}[0];
-   		    				$clinvar_pat = @{$clinvar->{"$line[0]:$VCF_pos:$VCF_ref:$VCF_alt"}}[2];
-                        }
+						if (exists($clinvar->{"$line[0]:$VCF_pos:$VCF_ref:$VCF_alt"})) {
+							$clinvar_acc = @{$clinvar->{"$line[0]:$VCF_pos:$VCF_ref:$VCF_alt"}}[1];
+							$clinvar_dis = @{$clinvar->{"$line[0]:$VCF_pos:$VCF_ref:$VCF_alt"}}[0];
+							$clinvar_pat = @{$clinvar->{"$line[0]:$VCF_pos:$VCF_ref:$VCF_alt"}}[2];
+						}
 
-	    				my $prot_pos = $fields[$pos{Protein_position}];
-	    				my $prot_end;
-	    				my $ident = "";
+						my $prot_pos = $fields[$pos{Protein_position}];
+						my $prot_end;
+						my $ident = "";
 
-                        if (exists($uniprot_b->{$fields[$pos{SYMBOL}]})) {
-   							$ident = $uniprot_b->{$fields[$pos{SYMBOL}]};
+						if (exists($uniprot_b->{$fields[$pos{SYMBOL}]})) {
+							$ident = $uniprot_b->{$fields[$pos{SYMBOL}]};
 
-   							my $prot_end = 0;
+							my $prot_end = 0;
 
-   							if ($fields[$pos{Protein_position}] =~ /(\d+)\-(\d+)/) {
-   								$prot_pos = $1;
-   								$prot_end = $2;
-   							}
+							if ($fields[$pos{Protein_position}] =~ /(\d+)\-(\d+)/) {
+								$prot_pos = $1;
+								$prot_end = $2;
+							}
 
-   							if ($fields[$pos{Protein_position}] =~ /(\d+)\-(\?)/) {
-   								$prot_pos = $1;
-   								$prot_end = 0;
-   							}
+							if ($fields[$pos{Protein_position}] =~ /(\d+)\-(\?)/) {
+								$prot_pos = $1;
+								$prot_end = 0;
+							}
 
 
-   							if ($prot_pos ne "") {
-                                if (exists($pfam_a->{$ident})) {
-                                    foreach my $ia (0..scalar(@{$pfam_a->{$ident}})-1) {
-    									if (($prot_pos >= ${@{$pfam_a->{$ident}}[$ia]}[2] && $prot_pos <= ${@{$pfam_a->{$ident}}[$ia]}[3]) || ($prot_end >= ${@{$pfam_a->{$ident}}[$ia]}[2] && $prot_end <= ${@{$pfam_a->{$ident}}[$ia]}[3])) {
-   											$pfam = "${@{$pfam_a->{$ident}}[$ia]}[0]: ${@{$pfam_a->{$ident}}[$ia]}[1]";
-                                        }
-   									}
-   								}
-                                if (exists($interpro_a->{$ident})) {
-                                    foreach my $ii (0..scalar(@{$interpro_a->{$ident}})-1) {
-   										if (($prot_pos >= ${@{$interpro_a->{$ident}}[$ii]}[2] && $prot_pos <= ${@{$interpro_a->{$ident}}[$ii]}[3]) || ($prot_end >= ${@{$interpro_a->{$ident}}[$ii]}[2] && $prot_end <= ${@{$interpro_a->{$ident}}[$ii]}[3])) {
-   											$interpro = "${@{$interpro_a->{$ident}}[$ii]}[0]: ${@{$interpro_a->{$ident}}[$ii]}[1]";
-   										}
-   									}
-   								}
-   								if ($fields[$pos{Consequence}] =~ /(stop_gained|frameshift_variant)/ && $interpro eq "" && exists($last_domain->{$ident}) && $prot_pos <= $last_domain->{$ident}) {
-   									$interpro = "Mutation previous last protein domain";
-   								}
-   							}
+							if ($prot_pos ne "") {
+								if (exists($pfam_a->{$ident})) {
+									foreach my $ia (0..scalar(@{$pfam_a->{$ident}})-1) {
+										if (($prot_pos >= ${@{$pfam_a->{$ident}}[$ia]}[2] && $prot_pos <= ${@{$pfam_a->{$ident}}[$ia]}[3]) || ($prot_end >= ${@{$pfam_a->{$ident}}[$ia]}[2] && $prot_end <= ${@{$pfam_a->{$ident}}[$ia]}[3])) {
+											$pfam = "${@{$pfam_a->{$ident}}[$ia]}[0]: ${@{$pfam_a->{$ident}}[$ia]}[1]";
+										}
+									}
+								}
+								if (exists($interpro_a->{$ident})) {
+									foreach my $ii (0..scalar(@{$interpro_a->{$ident}})-1) {
+										if (($prot_pos >= ${@{$interpro_a->{$ident}}[$ii]}[2] && $prot_pos <= ${@{$interpro_a->{$ident}}[$ii]}[3]) || ($prot_end >= ${@{$interpro_a->{$ident}}[$ii]}[2] && $prot_end <= ${@{$interpro_a->{$ident}}[$ii]}[3])) {
+											$interpro = "${@{$interpro_a->{$ident}}[$ii]}[0]: ${@{$interpro_a->{$ident}}[$ii]}[1]";
+										}
+									}
+								}
+								if ($fields[$pos{Consequence}] =~ /(stop_gained|frameshift_variant)/ && $interpro eq "" && exists($last_domain->{$ident}) && $prot_pos <= $last_domain->{$ident}) {
+									$interpro = "Mutation previous last protein domain";
+								}
+							}
 
-	    				}
+						}
 
-	    				my $gene_role = '';
-	    				$gene_role = $generole->{$fields[$pos{SYMBOL}]} if ($generole->{$fields[$pos{SYMBOL}]});
+						my $gene_role = '';
+						$gene_role = $generole->{$fields[$pos{SYMBOL}]} if ($generole->{$fields[$pos{SYMBOL}]});
 
 						if ($fields[$pos{gnomAD}]) {
 							my @gnomAD = split ("&", $fields[$pos{gnomAD}]);
@@ -554,42 +564,42 @@ sub VEP_Parser_Csv($$) {#Require a DB_conection and source data file
 								}
 							}
 						}
-		               	my @q_data_line = [$line[0], $line[1], $line[2], $line[3], $line[4], $line[5], $line[6], $line[7], $line[8], $line[9], $line[10], $line[11], $fields[$pos{Allele}], $fields[$pos{Gene}], $fields[$pos{Feature}], $fields[$pos{Feature_type}], $fields[$pos{Consequence}], $fields[$pos{Impact}], $fields[$pos{cDNA_position}], $fields[$pos{CDS_position}], $fields[$pos{Protein_position}], $fields[$pos{Amino_acids}], $fields[$pos{Codons}], $fields[$pos{Existing_variation}], "", $fields[$pos{APPRIS}], $pol_cons, $pol_sco, $sift_cons, $sift_sco, $CADD_phred, $CADD_raw, $fields[$pos{SYMBOL}], $gene_role, $cosmic_id, $kegg_data, $kegg_ids, $clinvar_acc, $clinvar_dis, $clinvar_pat, $var_type, $HGVSc, $HGVSp, $GMAF, $gnomAD, $gnomAD_NFE, $pfam, $interpro, $gene_freq, $mut_freq];
+						my @q_data_line = [$line[0], $line[1], $line[2], $line[3], $line[4], $line[5], $line[6], $line[7], $line[8], $line[9], $line[10], $line[11], $fields[$pos{Allele}], $fields[$pos{Gene}], $fields[$pos{Feature}], $fields[$pos{Feature_type}], $fields[$pos{Consequence}], $fields[$pos{Impact}], $fields[$pos{cDNA_position}], $fields[$pos{CDS_position}], $fields[$pos{Protein_position}], $fields[$pos{Amino_acids}], $fields[$pos{Codons}], $fields[$pos{Existing_variation}], "", $fields[$pos{APPRIS}], $pol_cons, $pol_sco, $sift_cons, $sift_sco, $CADD_phred, $CADD_raw, $fields[$pos{SYMBOL}], $gene_role, $cosmic_id, $kegg_data, $kegg_ids, $clinvar_acc, $clinvar_dis, $clinvar_pat, $var_type, $HGVSc, $HGVSp, $GMAF, $gnomAD, $gnomAD_NFE, $pfam, $interpro, $gene_freq, $mut_freq];
 
 						@q_data_line = &create_vscore (@q_data_line);
 
-                		no warnings 'uninitialized';
-        				push @q_data, @q_data_line;
-                        print OUT join("\t", @{$q_data[scalar(@q_data)-1]}), "\n";
-                    }
-                    $count++;
+						no warnings 'uninitialized';
+						push @q_data, @q_data_line;
+						print OUT join("\t", @{$q_data[scalar(@q_data)-1]}), "\n";
+					}
+					$count++;
 				}
 
-                @q_data = sort { $a->[0] cmp $b->[0] || $a->[1] cmp $b->[1] || $a->[10] cmp $b->[10] || $a->[13] cmp $b->[13] || $a->[42] cmp $b->[42] || $a->[14] cmp $b->[14]} @q_data;
+				@q_data = sort { $a->[0] cmp $b->[0] || $a->[1] cmp $b->[1] || $a->[10] cmp $b->[10] || $a->[13] cmp $b->[13] || $a->[42] cmp $b->[42] || $a->[14] cmp $b->[14]} @q_data;
 
-                foreach my $qi (0..$#q_data) {
-            		no warnings 'uninitialized';
-                    if ($conseq_file == 1) {
-                        if ($q_data[$qi][17] =~ /HIGH|MODERATE/) {
-                            print OUTSORT "$q_data[$qi][0]\t$q_data[$qi][1]\t$q_data[$qi][10]\t$q_data[$qi][13]\t$q_data[$qi][14]\t$q_data[$qi][15]\t$q_data[$qi][16]\t$q_data[$qi][17]\t$q_data[$qi][25]\t$q_data[$qi][26]\t$q_data[$qi][27]\t$q_data[$qi][28]\t$q_data[$qi][29]\t$q_data[$qi][30]\t$q_data[$qi][31]\t$q_data[$qi][32]\t$q_data[$qi][33]\t$q_data[$qi][34]\t$q_data[$qi][35]\t$q_data[$qi][36]\t$q_data[$qi][20]\t$q_data[$qi][21]\t$q_data[$qi][37]\t$q_data[$qi][38]\t$q_data[$qi][39]\t$q_data[$qi][40]\t$q_data[$qi][41]\t$q_data[$qi][42]\t$q_data[$qi][43]\t$q_data[$qi][44]\t$q_data[$qi][45]\t$q_data[$qi][46]\t$q_data[$qi][47]\t$q_data[$qi][48]\t$q_data[$qi][49]\t$q_data[$qi][50]\t$q_data[$qi][51]\t$q_data[$qi][52]\t$q_data[$qi][53]\t$q_data[$qi][54]\t$q_data[$qi][55]\t$q_data[$qi][56]\t$q_data[$qi][57]\t$q_data[$qi][58]\t$q_data[$qi][59]\t$q_data[$qi][60]\t$q_data[$qi][61]\n";
-                        }
-                    } else {
-                        print OUTSORT "$q_data[$qi][0]\t$q_data[$qi][1]\t$q_data[$qi][10]\t$q_data[$qi][13]\t$q_data[$qi][14]\t$q_data[$qi][15]\t$q_data[$qi][16]\t$q_data[$qi][17]\t$q_data[$qi][25]\t$q_data[$qi][26]\t$q_data[$qi][27]\t$q_data[$qi][28]\t$q_data[$qi][29]\t$q_data[$qi][30]\t$q_data[$qi][31]\t$q_data[$qi][32]\t$q_data[$qi][33]\t$q_data[$qi][34]\t$q_data[$qi][35]\t$q_data[$qi][36]\t$q_data[$qi][37]\t$q_data[$qi][20]\t$q_data[$qi][21]\t$q_data[$qi][38]\t$q_data[$qi][39]\t$q_data[$qi][40]\t$q_data[$qi][41]\t$q_data[$qi][42]\t$q_data[$qi][43]\t$q_data[$qi][44]\t$q_data[$qi][45]\t$q_data[$qi][46]\t$q_data[$qi][47]\t$q_data[$qi][48]\t$q_data[$qi][49]\t$q_data[$qi][50]\t$q_data[$qi][51]\t$q_data[$qi][52]\t$q_data[$qi][53]\t$q_data[$qi][54]\t$q_data[$qi][55]\t$q_data[$qi][56]\t$q_data[$qi][57]\t$q_data[$qi][58]\t$q_data[$qi][59]\t$q_data[$qi][60]\t$q_data[$qi][61]\n";
-                    }
-                }
-            }
-        }
-        close INPUT;
-        close OUT;
-        close OUTSORT;
-        print "Chromosome $chr processed!\n";
+				foreach my $qi (0..$#q_data) {
+					no warnings 'uninitialized';
+					if ($conseq_file == 1) {
+						if ($q_data[$qi][17] =~ /HIGH|MODERATE/) {
+							print OUTSORT "$q_data[$qi][0]\t$q_data[$qi][1]\t$q_data[$qi][10]\t$q_data[$qi][13]\t$q_data[$qi][14]\t$q_data[$qi][15]\t$q_data[$qi][16]\t$q_data[$qi][17]\t$q_data[$qi][25]\t$q_data[$qi][26]\t$q_data[$qi][27]\t$q_data[$qi][28]\t$q_data[$qi][29]\t$q_data[$qi][30]\t$q_data[$qi][31]\t$q_data[$qi][32]\t$q_data[$qi][33]\t$q_data[$qi][34]\t$q_data[$qi][35]\t$q_data[$qi][36]\t$q_data[$qi][20]\t$q_data[$qi][21]\t$q_data[$qi][37]\t$q_data[$qi][38]\t$q_data[$qi][39]\t$q_data[$qi][40]\t$q_data[$qi][41]\t$q_data[$qi][42]\t$q_data[$qi][43]\t$q_data[$qi][44]\t$q_data[$qi][45]\t$q_data[$qi][46]\t$q_data[$qi][47]\t$q_data[$qi][48]\t$q_data[$qi][49]\t$q_data[$qi][50]\t$q_data[$qi][51]\t$q_data[$qi][52]\t$q_data[$qi][53]\t$q_data[$qi][54]\t$q_data[$qi][55]\t$q_data[$qi][56]\t$q_data[$qi][57]\t$q_data[$qi][58]\t$q_data[$qi][59]\t$q_data[$qi][60]\t$q_data[$qi][61]\n";
+						}
+					} else {
+						print OUTSORT "$q_data[$qi][0]\t$q_data[$qi][1]\t$q_data[$qi][10]\t$q_data[$qi][13]\t$q_data[$qi][14]\t$q_data[$qi][15]\t$q_data[$qi][16]\t$q_data[$qi][17]\t$q_data[$qi][25]\t$q_data[$qi][26]\t$q_data[$qi][27]\t$q_data[$qi][28]\t$q_data[$qi][29]\t$q_data[$qi][30]\t$q_data[$qi][31]\t$q_data[$qi][32]\t$q_data[$qi][33]\t$q_data[$qi][34]\t$q_data[$qi][35]\t$q_data[$qi][36]\t$q_data[$qi][37]\t$q_data[$qi][20]\t$q_data[$qi][21]\t$q_data[$qi][38]\t$q_data[$qi][39]\t$q_data[$qi][40]\t$q_data[$qi][41]\t$q_data[$qi][42]\t$q_data[$qi][43]\t$q_data[$qi][44]\t$q_data[$qi][45]\t$q_data[$qi][46]\t$q_data[$qi][47]\t$q_data[$qi][48]\t$q_data[$qi][49]\t$q_data[$qi][50]\t$q_data[$qi][51]\t$q_data[$qi][52]\t$q_data[$qi][53]\t$q_data[$qi][54]\t$q_data[$qi][55]\t$q_data[$qi][56]\t$q_data[$qi][57]\t$q_data[$qi][58]\t$q_data[$qi][59]\t$q_data[$qi][60]\t$q_data[$qi][61]\n";
+					}
+				}
+			}
+		}
+		close INPUT;
+		close OUT;
+		close OUTSORT;
+		print "Chromosome $chr processed!\n";
 		$pm->finish; # Terminates the child process
 	}
 	$pm->wait_all_children;
 	open (GREATOUT, ">$outexp/vep_data.csv");
-    print GREATOUT "Chr\tLoc\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tsample\tmut\tlocation\tallele\tgene\tfeature\tfeature_type\tconsequence\timpact\tcdna_position\tcds_position\tprotein_position\tamino_acids\tcodons\texisting_variation\textra\tprincipal\tpoly_effect\tpoly_score\tsift_effect\tsift_score\tCADD_phred\tCADD_raw\tgene_hgnc\tgene_role\tcosmic_id\tKEGG_data\tKEGG_path_id\tclinvar_acc\tclinvar_disease\tclinvar_clinical_significance\tvariation_type\tHGVS_cDNA\tHGVS_protein\tGMAF\tgnomAD\tgnomAD_NFE\tpfam\tinterpro\tgene_cosmic_freq\tmut_cosmic_freq\tvscore\tbranch\n";
+	print GREATOUT "Chr\tLoc\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tsample\tmut\tlocation\tallele\tgene\tfeature\tfeature_type\tconsequence\timpact\tcdna_position\tcds_position\tprotein_position\tamino_acids\tcodons\texisting_variation\textra\tprincipal\tpoly_effect\tpoly_score\tsift_effect\tsift_score\tCADD_phred\tCADD_raw\tgene_hgnc\tgene_role\tcosmic_id\tKEGG_data\tKEGG_path_id\tclinvar_acc\tclinvar_disease\tclinvar_clinical_significance\tvariation_type\tHGVS_cDNA\tHGVS_protein\tGMAF\tgnomAD\tgnomAD_NFE\tpfam\tinterpro\tgene_cosmic_freq\tmut_cosmic_freq\tvscore\tbranch\n";
 
-    foreach $chr (@chr_names) {
+	foreach $chr (@chr_names) {
 		open (INPUT, "$outexp/vep_data_$chr.csv");
 		while (<INPUT>) {
 			unless ($_ =~ /^Chr/) {
@@ -603,9 +613,9 @@ sub VEP_Parser_Csv($$) {#Require a DB_conection and source data file
 	close GREATOUT;
 
 	open (GREATOUT, ">$outexp/vep_data_sorted.csv");
-    print GREATOUT "chr\tloc\tmut\tgene\tfeature\tfeature_type\tconsequence\timpact\tprincipal\tpoly_effect\tpoly_score\tsift_effect\tsift_score\tCADD_phred\tCADD_raw\tgene_hgnc\tgene_role\tcosmic_id\tkegg_data\tkegg_path_id\tprotein_position\tamino_acids\tclinvar_acc\tclinvar_disease\tclinvar_clinical_significance\tvariation_type\tHGVS_cDNA\tHGVS_protein\tGMAF\tgnomAD\tgnomAD_NFE\tpfam\tinterpro\tgene_cosmic_freq\tmut_cosmic_freq\tvscore\tbranch\n";
+	print GREATOUT "chr\tloc\tmut\tgene\tfeature\tfeature_type\tconsequence\timpact\tprincipal\tpoly_effect\tpoly_score\tsift_effect\tsift_score\tCADD_phred\tCADD_raw\tgene_hgnc\tgene_role\tcosmic_id\tkegg_data\tkegg_path_id\tprotein_position\tamino_acids\tclinvar_acc\tclinvar_disease\tclinvar_clinical_significance\tvariation_type\tHGVS_cDNA\tHGVS_protein\tGMAF\tgnomAD\tgnomAD_NFE\tpfam\tinterpro\tgene_cosmic_freq\tmut_cosmic_freq\tvscore\tbranch\n";
 
-    foreach $chr (@chr_names) {
+	foreach $chr (@chr_names) {
 		open (INPUT, "$outexp/vep_data_sorted_$chr.csv");
 		while (<INPUT>) {
 			unless ($_ =~ /^chr/) {
@@ -706,49 +716,49 @@ sub chkmut_cosmic() {
 
 	my ($gene, $transcript, $HGVSc) = @_;
 
-    if (exists($cosmic_list1->{"$gene:$transcript:$HGVSc"})) {
-        return (@{$cosmic_list1->{"$gene:$transcript:$HGVSc"}});
+	if (exists($cosmic_list1->{"$gene:$transcript:$HGVSc"})) {
+		return (@{$cosmic_list1->{"$gene:$transcript:$HGVSc"}});
 	} elsif (exists($cosmic_list2->{"$gene:$transcript:$HGVSc"})){
-        return (@{$cosmic_list2->{"$gene:$transcript:$HGVSc"}});
-    } elsif (exists($cosmic_list3->{"$gene:$transcript:$HGVSc"})){
-        return (@{$cosmic_list3->{"$gene:$transcript:$HGVSc"}});
-    } elsif (exists($cosmic_list4->{"$gene:$transcript:$HGVSc"})){
-        return (@{$cosmic_list4->{"$gene:$transcript:$HGVSc"}});
-    } elsif (exists($cosmic_list5->{"$gene:$transcript:$HGVSc"})){
-        return (@{$cosmic_list5->{"$gene:$transcript:$HGVSc"}});
-    } elsif (exists($cosmic_list6->{"$gene:$transcript:$HGVSc"})){
-        return (@{$cosmic_list6->{"$gene:$transcript:$HGVSc"}});
-    } elsif (exists($cosmic_list7->{"$gene:$transcript:$HGVSc"})){
-        return (@{$cosmic_list7->{"$gene:$transcript:$HGVSc"}});
-    } elsif (exists($cosmic_list8->{"$gene:$transcript:$HGVSc"})){
-        return (@{$cosmic_list8->{"$gene:$transcript:$HGVSc"}});
-    } elsif (exists($cosmic_list9->{"$gene:$transcript:$HGVSc"})){
-        return (@{$cosmic_list9->{"$gene:$transcript:$HGVSc"}});
-    } elsif (exists($cosmic_list10->{"$gene:$transcript:$HGVSc"})){
-        return (@{$cosmic_list10->{"$gene:$transcript:$HGVSc"}});
-    } elsif (exists($cosmic_list11->{"$gene:$transcript:$HGVSc"})){
-        return (@{$cosmic_list11->{"$gene:$transcript:$HGVSc"}});
-    } elsif (exists($cosmic_list12->{"$gene:$transcript:$HGVSc"})){
-        return (@{$cosmic_list12->{"$gene:$transcript:$HGVSc"}});
-    } elsif (exists($cosmic_list13->{"$gene:$transcript:$HGVSc"})){
-        return (@{$cosmic_list13->{"$gene:$transcript:$HGVSc"}});
-    } elsif (exists($cosmic_list14->{"$gene:$transcript:$HGVSc"})){
-        return (@{$cosmic_list14->{"$gene:$transcript:$HGVSc"}});
-    } elsif (exists($cosmic_list15->{"$gene:$transcript:$HGVSc"})){
-        return (@{$cosmic_list15->{"$gene:$transcript:$HGVSc"}});
-    } elsif (exists($cosmic_list16->{"$gene:$transcript:$HGVSc"})){
-        return (@{$cosmic_list16->{"$gene:$transcript:$HGVSc"}});
-    } elsif (exists($cosmic_list17->{"$gene:$transcript:$HGVSc"})){
-        return (@{$cosmic_list17->{"$gene:$transcript:$HGVSc"}});
-    } 
+		return (@{$cosmic_list2->{"$gene:$transcript:$HGVSc"}});
+	} elsif (exists($cosmic_list3->{"$gene:$transcript:$HGVSc"})){
+		return (@{$cosmic_list3->{"$gene:$transcript:$HGVSc"}});
+	} elsif (exists($cosmic_list4->{"$gene:$transcript:$HGVSc"})){
+		return (@{$cosmic_list4->{"$gene:$transcript:$HGVSc"}});
+	} elsif (exists($cosmic_list5->{"$gene:$transcript:$HGVSc"})){
+		return (@{$cosmic_list5->{"$gene:$transcript:$HGVSc"}});
+	} elsif (exists($cosmic_list6->{"$gene:$transcript:$HGVSc"})){
+		return (@{$cosmic_list6->{"$gene:$transcript:$HGVSc"}});
+	} elsif (exists($cosmic_list7->{"$gene:$transcript:$HGVSc"})){
+		return (@{$cosmic_list7->{"$gene:$transcript:$HGVSc"}});
+	} elsif (exists($cosmic_list8->{"$gene:$transcript:$HGVSc"})){
+		return (@{$cosmic_list8->{"$gene:$transcript:$HGVSc"}});
+	} elsif (exists($cosmic_list9->{"$gene:$transcript:$HGVSc"})){
+		return (@{$cosmic_list9->{"$gene:$transcript:$HGVSc"}});
+	} elsif (exists($cosmic_list10->{"$gene:$transcript:$HGVSc"})){
+		return (@{$cosmic_list10->{"$gene:$transcript:$HGVSc"}});
+	} elsif (exists($cosmic_list11->{"$gene:$transcript:$HGVSc"})){
+		return (@{$cosmic_list11->{"$gene:$transcript:$HGVSc"}});
+	} elsif (exists($cosmic_list12->{"$gene:$transcript:$HGVSc"})){
+		return (@{$cosmic_list12->{"$gene:$transcript:$HGVSc"}});
+	} elsif (exists($cosmic_list13->{"$gene:$transcript:$HGVSc"})){
+		return (@{$cosmic_list13->{"$gene:$transcript:$HGVSc"}});
+	} elsif (exists($cosmic_list14->{"$gene:$transcript:$HGVSc"})){
+		return (@{$cosmic_list14->{"$gene:$transcript:$HGVSc"}});
+	} elsif (exists($cosmic_list15->{"$gene:$transcript:$HGVSc"})){
+		return (@{$cosmic_list15->{"$gene:$transcript:$HGVSc"}});
+	} elsif (exists($cosmic_list16->{"$gene:$transcript:$HGVSc"})){
+		return (@{$cosmic_list16->{"$gene:$transcript:$HGVSc"}});
+	} elsif (exists($cosmic_list17->{"$gene:$transcript:$HGVSc"})){
+		return (@{$cosmic_list17->{"$gene:$transcript:$HGVSc"}});
+	} 
 
 }
 
 sub get_kegg_id_sym {
 
-    my ($hgnc_symbol) = @_;
+	my ($hgnc_symbol) = @_;
 
-    if (exists($genes_ids->{$hgnc_symbol})) {
+	if (exists($genes_ids->{$hgnc_symbol})) {
 		my @kegg_pathways = &get_kegg_path("$genes_ids->{$hgnc_symbol}");
 		return ($hgnc_symbol,@kegg_pathways,$1);
 	}
@@ -761,7 +771,7 @@ sub get_kegg_id_sym {
 sub get_kegg_path {
 	my ($kegg_id) = @_;
 
-    if (exists($kegg_gene_pathway_DB->{$kegg_id})) {
+	if (exists($kegg_gene_pathway_DB->{$kegg_id})) {
 		my @kegg_path_desc = split /\|/, $kegg_gene_pathway_DB->{$kegg_id};
 		return get_kegg_path_desc(\@kegg_path_desc);
 	}
@@ -771,7 +781,7 @@ sub get_kegg_path {
 }
 
 sub get_kegg_path_desc {
-    my @kegg_paths = @{$_[0]};
+	my @kegg_paths = @{$_[0]};
 	my $results = "";
 
 	foreach my $path_id (@kegg_paths) {
@@ -848,14 +858,14 @@ sub create_vscore() {
 			my @genetype = ();
 			foreach my $ic (0..$#components) {
 				if ($components[$ic] =~ /:([\w ]+)/) {
-                    if ($1 eq "ONC" || $1 eq "TSG") {
-                        push(@genetype, $1);
-                    }
-                }
+					if ($1 eq "ONC" || $1 eq "TSG") {
+						push(@genetype, $1);
+					}
+				}
 			}
-            @genetype = uniq @genetype;
+			@genetype = uniq @genetype;
 
-            my $genetype_string = join(":", @genetype);
+			my $genetype_string = join(":", @genetype);
 
 			if ($genetype_string) {
 				if ($genetype_string eq "ONC") {
@@ -983,13 +993,9 @@ sub create_vscore() {
 				}
 			}
 #print "hom:$score\n";
-			#DepMap
-			if (exists($essential->{$linedata[$scored_columns{gene_hgnc}]})) {
-                            if ($essential->{$linedata[$scored_columns{gene_hgnc}]}[0] < -2) {
-                                $score += 0.2;
-                            } elsif ($essential->{$linedata[$scored_columns{gene_hgnc}]}[0] <= -0.5) {
-                                $score += 0.2 * ($essential->{$linedata[$scored_columns{gene_hgnc}]}[0] - $essential->{$linedata[$scored_columns{gene_hgnc}]}[1]) / (-2 - $essential->{$linedata[$scored_columns{gene_hgnc}]}[1]);
-                            }
+			#GScore
+			if (exists($gscore->{$linedata[$scored_columns{gene_hgnc}]})) {
+				$score += (0.125 * $gscore->{$linedata[$scored_columns{gene_hgnc}]});
 			}
 
 			push @{$vep_file[$i]}, (sprintf("%.4f", $score), $branch);
@@ -1000,7 +1006,7 @@ sub create_vscore() {
 
 	}
 
-    return @vep_file;
+	return @vep_file;
 }
 
 sub printl {

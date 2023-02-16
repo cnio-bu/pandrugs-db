@@ -18,8 +18,8 @@ use List::MoreUtils qw(uniq);
 my $outdir = "./output/";
 my $dbdir;
 my $outpath = getcwd;
-my (%cosmic_list1, %cosmic_list2, %cosmic_list3, %cosmic_list4, %cosmic_list5, %cosmic_list6, %cosmic_list7, %cosmic_list8, %cosmic_list9, %cosmic_list10, %cosmic_list11, %cosmic_list12, %cosmic_list13, %cosmic_list14, %cosmic_list15, %cosmic_list16, %cosmic_list17, %cosmic_list18, %cosmic_list19, %cosmic_list20, %cosmic_list21, %cosmic_list22, %cosmic_list23, %cosmic_list24, %cosmic_list25, %cosmic_list26);
-my ($cosmic_list1, $cosmic_list2, $cosmic_list3, $cosmic_list4, $cosmic_list5, $cosmic_list6, $cosmic_list7, $cosmic_list8, $cosmic_list9, $cosmic_list10, $cosmic_list11, $cosmic_list12, $cosmic_list13, $cosmic_list14, $cosmic_list15, $cosmic_list16, $cosmic_list17, $cosmic_list18, $cosmic_list19, $cosmic_list20, $cosmic_list21, $cosmic_list22, $cosmic_list23, $cosmic_list24, $cosmic_list25, $cosmic_list26);
+my (%cosmic_list0, %cosmic_list1, %cosmic_list2, %cosmic_list3, %cosmic_list4, %cosmic_list5, %cosmic_list6, %cosmic_list7, %cosmic_list8, %cosmic_list9, %cosmic_list10, %cosmic_list11, %cosmic_list12, %cosmic_list13, %cosmic_list14, %cosmic_list15, %cosmic_list16, %cosmic_list17, %cosmic_list18, %cosmic_list19, %cosmic_list20, %cosmic_list21, %cosmic_list22, %cosmic_list23, %cosmic_list24, %cosmic_list25, %cosmic_gene_freq);
+my ($cosmic_list0, $cosmic_list1, $cosmic_list2, $cosmic_list3, $cosmic_list4, $cosmic_list5, $cosmic_list6, $cosmic_list7, $cosmic_list8, $cosmic_list9, $cosmic_list10, $cosmic_list11, $cosmic_list12, $cosmic_list13, $cosmic_list14, $cosmic_list15, $cosmic_list16, $cosmic_list17, $cosmic_list18, $cosmic_list19, $cosmic_list20, $cosmic_list21, $cosmic_list22, $cosmic_list23, $cosmic_list24, $cosmic_list25, $cosmic_gene_freq);
 my $vep_results_file;
 my $logfile = "";
 my %pathw_desc;
@@ -141,7 +141,6 @@ my $outexp = $outdir . "/" . $jobid . "/";
 mkpath($outexp);
 
 # Call VEP main subroutine
-#print("$cosmic1\n");
 &VEP_Parser_Csv;
 
 $end = Time::HiRes::gettimeofday();
@@ -158,6 +157,7 @@ exit;
 sub load_vars2 {
 #Load files into variables
 
+	$cosmic_list0 = DBM::Deep->new("$dbdir/cosmic00.db");
 	$cosmic_list1 = DBM::Deep->new("$dbdir/cosmic01.db");
 	$cosmic_list2 = DBM::Deep->new("$dbdir/cosmic02.db");
 	$cosmic_list3 = DBM::Deep->new("$dbdir/cosmic03.db");
@@ -183,7 +183,7 @@ sub load_vars2 {
 	$cosmic_list23 = DBM::Deep->new("$dbdir/cosmic23.db");
 	$cosmic_list24 = DBM::Deep->new("$dbdir/cosmic24.db");
 	$cosmic_list25 = DBM::Deep->new("$dbdir/cosmic25.db");
-	$cosmic_list26 = DBM::Deep->new("$dbdir/cosmic26.db");
+	$cosmic_gene_freq = DBM::Deep->new("$dbdir/cosmic_gene_freq.db");
 
 	$genes_ids = DBM::Deep->new("$dbdir/genesids.db");
 
@@ -281,8 +281,8 @@ sub VEP_Parser_Csv($$) {#Require a DB_conection and source data file
 				$pos{cDNA_position} = $i if ($vep_fields[$i] eq "cDNA_position");
 				$pos{Codons} = $i if ($vep_fields[$i] eq "Codons");
 				$pos{VARIANT_CLASS} = $i if ($vep_fields[$i] eq "VARIANT_CLASS");
-				$pos{gnomAD} = $i if ($vep_fields[$i] eq "gnomAD_AF");
-				$pos{gnomAD_NFE} = $i if ($vep_fields[$i] eq "gnomAD_NFE_AF");
+				$pos{gnomADe} = $i if ($vep_fields[$i] eq "gnomADe_AF");
+				$pos{gnomADe_NFE} = $i if ($vep_fields[$i] eq "gnomADe_NFE_AF");
 				$pos{EXON} = $i if ($vep_fields[$i] eq "EXON");
 				$pos{APPRIS} = $i if ($vep_fields[$i] eq "APPRIS");
 
@@ -414,8 +414,8 @@ sub VEP_Parser_Csv($$) {#Require a DB_conection and source data file
 						my $CADD_raw = "";
 						my $cosmic_id = "";
 						my $cosmic_fathmm = "";
-						my $gene_freq = "";
-						my $mut_freq = "";
+						my $gene_freq = 0;
+						my $mut_freq = 0;
 						my $cosmic_total = "";
 						my $kegg_data = "";
 						my $kegg_ids = "";
@@ -470,9 +470,11 @@ sub VEP_Parser_Csv($$) {#Require a DB_conection and source data file
 
 						if ($fields[$pos{HGVSc}]) {
 							($cosmic_id, $cosmic_fathmm, $gene_freq, $mut_freq, $cosmic_total) = &chkmut_cosmic($fields[$pos{SYMBOL}], $fields[$pos{Feature}], $HGVSc);
-							$cosmic_id .= ":$cosmic_fathmm" if ($cosmic_fathmm);
-							$gene_freq = $gene_freq if ($gene_freq);
-							$mut_freq = $mut_freq if ($mut_freq);
+							$cosmic_id .= ":$cosmic_fathmm" if ($cosmic_fathmm ne "");
+						}
+
+						if (exists($cosmic_gene_freq->{$fields[$pos{SYMBOL}]})) {
+							$gene_freq = "@{$cosmic_gene_freq->{$fields[$pos{SYMBOL}]}}[0] / @{$cosmic_gene_freq->{$fields[$pos{SYMBOL}]}}[1]"
 						}
 
 						if ($fields[$pos{SYMBOL}]) {
@@ -482,7 +484,6 @@ sub VEP_Parser_Csv($$) {#Require a DB_conection and source data file
 							}
 							$kegg_data = $last_gene[1];
 							$kegg_ids = $last_gene[2];
-
 						}
 
 						$var_type = $fields[$pos{"VARIANT_CLASS"}];
@@ -522,6 +523,11 @@ sub VEP_Parser_Csv($$) {#Require a DB_conection and source data file
 								$prot_end = 0;
 							}
 
+							if ($fields[$pos{Protein_position}] =~ /(\?)\-(\d+)/) {
+								$prot_pos = 0;
+								$prot_end = $2;
+							}
+
 
 							if ($prot_pos ne "") {
 								if (exists($pfam_a->{$ident})) {
@@ -548,16 +554,16 @@ sub VEP_Parser_Csv($$) {#Require a DB_conection and source data file
 						my $gene_role = '';
 						$gene_role = $generole->{$fields[$pos{SYMBOL}]} if ($generole->{$fields[$pos{SYMBOL}]});
 
-						if ($fields[$pos{gnomAD}]) {
-							my @gnomAD = split ("&", $fields[$pos{gnomAD}]);
+						if ($fields[$pos{gnomADe}]) {
+							my @gnomAD = split ("&", $fields[$pos{gnomADe}]);
 							foreach my $ex (@gnomAD) {
 								if ($ex ne "") {
 									$gnomAD = $ex * 100;
 								}
 							}
 						}
-						if ($fields[$pos{gnomAD_NFE}]) {
-							my @gnomAD = split ("&", $fields[$pos{gnomAD_NFE}]);
+						if ($fields[$pos{gnomADe_NFE}]) {
+							my @gnomAD = split ("&", $fields[$pos{gnomADe_NFE}]);
 							foreach my $ex (@gnomAD) {
 								if ($ex ne "") {
 									$gnomAD_NFE = $ex * 100;
@@ -716,7 +722,9 @@ sub chkmut_cosmic() {
 
 	my ($gene, $transcript, $HGVSc) = @_;
 
-	if (exists($cosmic_list1->{"$gene:$transcript:$HGVSc"})) {
+	if (exists($cosmic_list0->{"$gene:$transcript:$HGVSc"})) {
+		return (@{$cosmic_list0->{"$gene:$transcript:$HGVSc"}});
+	} elsif (exists($cosmic_list1->{"$gene:$transcript:$HGVSc"})){
 		return (@{$cosmic_list1->{"$gene:$transcript:$HGVSc"}});
 	} elsif (exists($cosmic_list2->{"$gene:$transcript:$HGVSc"})){
 		return (@{$cosmic_list2->{"$gene:$transcript:$HGVSc"}});
@@ -750,7 +758,25 @@ sub chkmut_cosmic() {
 		return (@{$cosmic_list16->{"$gene:$transcript:$HGVSc"}});
 	} elsif (exists($cosmic_list17->{"$gene:$transcript:$HGVSc"})){
 		return (@{$cosmic_list17->{"$gene:$transcript:$HGVSc"}});
-	} 
+	} elsif (exists($cosmic_list18->{"$gene:$transcript:$HGVSc"})){
+		return (@{$cosmic_list18->{"$gene:$transcript:$HGVSc"}});
+	} elsif (exists($cosmic_list19->{"$gene:$transcript:$HGVSc"})){
+		return (@{$cosmic_list19->{"$gene:$transcript:$HGVSc"}});
+	} elsif (exists($cosmic_list20->{"$gene:$transcript:$HGVSc"})){
+		return (@{$cosmic_list20->{"$gene:$transcript:$HGVSc"}});
+	} elsif (exists($cosmic_list21->{"$gene:$transcript:$HGVSc"})){
+		return (@{$cosmic_list21->{"$gene:$transcript:$HGVSc"}});
+	} elsif (exists($cosmic_list22->{"$gene:$transcript:$HGVSc"})){
+		return (@{$cosmic_list22->{"$gene:$transcript:$HGVSc"}});
+	} elsif (exists($cosmic_list23->{"$gene:$transcript:$HGVSc"})){
+		return (@{$cosmic_list23->{"$gene:$transcript:$HGVSc"}});
+	} elsif (exists($cosmic_list24->{"$gene:$transcript:$HGVSc"})){
+		return (@{$cosmic_list24->{"$gene:$transcript:$HGVSc"}});
+	} elsif (exists($cosmic_list25->{"$gene:$transcript:$HGVSc"})){
+		return (@{$cosmic_list25->{"$gene:$transcript:$HGVSc"}});
+	} else {
+		return ("", "", 0, 0, "")
+	}
 
 }
 
@@ -802,8 +828,6 @@ sub create_vscore() {
 	# vscore creation
 	my @vep_file = @_;
 	my $score = 0;
-	my $gene_freq = 0;
-	my $cosmic_freq = 0;
 	my $lastgene = "";
 	my $skip = 0;
 	my %scored_columns = ();
@@ -830,7 +854,7 @@ sub create_vscore() {
 		if ($linedata[$i] eq "consequence") { $scored_columns{consequence} = $i; }
 		if ($linedata[$i] eq "impact") { $scored_columns{impact} = $i; }
 		if ($linedata[$i] eq "GMAF") { $scored_columns{GMAF} = $i; }
-		if ($linedata[$i] eq "gnomAD") { $scored_columns{gnomAD} = $i; }
+		if ($linedata[$i] eq "gnomAD") { $scored_columns{gnomADe} = $i; }
 		if ($linedata[$i] eq "pfam") { $scored_columns{pfam} = $i; }
 		if ($linedata[$i] eq "interpro") { $scored_columns{interpro} = $i; }
 		if ($linedata[$i] eq "clinvar_clinical_significance") { $scored_columns{clinvar} = $i; }
@@ -887,7 +911,7 @@ sub create_vscore() {
 
 			# Add scores
 			my $prediction_damaging = 0;
-			
+
 			#Cosmic ID
 			if ($linedata[$scored_columns{cosmic_id}] =~ /(COSV\d+):*/) {
 				if ($linedata[$scored_columns{cosmic_id}] =~ /PATHOGENIC/) {
@@ -914,9 +938,7 @@ sub create_vscore() {
 					$score += $ss;
 				}
 			}
-			else {
-				$cosmic_freq = 0;
-			}
+
 #print "cosm:$score\n";
 			#Prediction score
 			if ($linedata[$scored_columns{poly_score}] && $linedata[$scored_columns{poly_score}] > 0.435) {
@@ -952,8 +974,8 @@ sub create_vscore() {
 			} else {
 				$score = ($score + 0.125 / 2);
 			}
-			if ($linedata[$scored_columns{gnomAD}] ne "") {
-				if ($linedata[$scored_columns{gnomAD}] < 1) {
+			if ($linedata[$scored_columns{gnomADe}] ne "") {
+				if ($linedata[$scored_columns{gnomADe}] < 1) {
 					$score += 0.125 / 2;
 				}
 			} else {

@@ -1,0 +1,12 @@
+---
+channels:
+  - bu_cnio
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - perl-archive-extract =0.88
+  - perl-dbm-deep =2.0016
+  - perl-exporter-tiny =1.002002
+  - perl-list-moreutils =0.430
+  - perl-parallel-forkmanager =2.02
